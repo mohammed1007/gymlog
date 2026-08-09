@@ -1,139 +1,115 @@
-import { useRef } from 'react';
-import { Download, Upload, Trash2, Moon } from 'lucide-react';
+import { useState } from 'react';
+import { Download, Upload, Server } from 'lucide-react';
 import { db } from '../db/db';
 
 export default function Settings() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   const handleExport = async () => {
     try {
-      // Pull all data from the local database
-      const logs = await db.workoutLogs.toArray();
-      const exercises = await db.exercises.toArray();
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
+      const workoutLogs = await db.workoutLogs.toArray();
       const bodyweightLogs = await db.bodyweightLogs.toArray();
       
-      const backupData = { logs, exercises, bodyweightLogs };
+      const data = { workoutLogs, bodyweightLogs };
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
       
-      // Create a downloadable JSON file
-      const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `gymlog-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Export failed:", error);
-      alert("Failed to export data.");
+      
+      setStatus('Export successful!');
+      setTimeout(() => setStatus(null), 3000);
+    } catch (err) {
+      console.error(err);
+      setStatus('Export failed.');
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = async (event) => {
       try {
-        const data = JSON.parse(e.target?.result as string);
+        const json = event.target?.result as string;
+        const data = JSON.parse(json);
         
-        // Restore data to IndexedDB
-        if (data.logs) await db.workoutLogs.bulkPut(data.logs);
-        if (data.exercises) await db.exercises.bulkPut(data.exercises);
-        if (data.bodyweightLogs) await db.bodyweightLogs.bulkPut(data.bodyweightLogs);
+        if (data.workoutLogs && Array.isArray(data.workoutLogs)) {
+          // Clear current tables before importing to prevent duplicates
+          await db.workoutLogs.clear();
+          await db.workoutLogs.bulkAdd(data.workoutLogs);
+        }
         
-        alert('Data successfully imported!');
+        if (data.bodyweightLogs && Array.isArray(data.bodyweightLogs)) {
+          await db.bodyweightLogs.clear();
+          await db.bodyweightLogs.bulkAdd(data.bodyweightLogs);
+        }
+
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([100, 100, 100]);
+        setStatus('Import successful! Data synced.');
+        setTimeout(() => setStatus(null), 3000);
       } catch (err) {
-        console.error("Import failed:", err);
-        alert('Failed to parse backup file. Please ensure it is a valid GymLog JSON backup.');
+        console.error(err);
+        setStatus('Invalid backup file.');
       }
-      
-      // Reset the input so the same file can be selected again if needed
-      if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsText(file);
   };
 
-  const handleDeleteAll = async () => {
-    const confirmed = window.confirm(
-      'Are you absolutely sure you want to delete all workout history? Make sure you have exported a backup first!'
-    );
-    
-    if (confirmed) {
-      await db.workoutLogs.clear();
-      alert('All workout history has been wiped.');
-    }
-  };
-
   return (
-    <div className="p-6 pb-24 h-full flex flex-col">
+    <div className="p-6 pb-24 h-full flex flex-col animate-in fade-in">
       <header className="mb-8 mt-4">
         <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
-        <p className="text-zinc-400 mt-1">Manage your app and data.</p>
+        <p className="text-white/60 mt-1">Manage your data and preferences.</p>
       </header>
 
       <div className="space-y-6">
-        {/* Appearance Section */}
-        <section>
-          <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-3">Appearance</h2>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <Moon size={20} className="text-zinc-400" />
-                <span className="text-white font-medium">Dark Mode</span>
-              </div>
-              <span className="text-xs font-bold text-blue-500 bg-blue-500/10 px-2 py-1 rounded-md">
-                DEFAULT
-              </span>
+        <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+              <Server size={20} className="text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Database Sync</h2>
+              <p className="text-white/50 text-xs">Export data from computer to phone.</p>
             </div>
           </div>
-        </section>
 
-        {/* Data Management Section */}
-        <section>
-          <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-3">Data & Backup</h2>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-            
+          <div className="flex flex-col gap-4">
             <button 
               onClick={handleExport}
-              className="w-full flex items-center justify-between p-4 border-b border-zinc-800 active:bg-zinc-800 transition-colors text-left"
+              className="w-full bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
             >
-              <div className="flex items-center gap-3">
-                <Download size={20} className="text-blue-500" />
-                <span className="text-white font-medium">Export Backup (JSON)</span>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-between p-4 border-b border-zinc-800 active:bg-zinc-800 transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Upload size={20} className="text-green-500" />
-                <span className="text-white font-medium">Import Backup</span>
-              </div>
-              {/* Hidden file input triggered by the button */}
-              <input 
-                type="file" 
-                accept=".json" 
-                ref={fileInputRef} 
-                onChange={handleImport} 
-                className="hidden" 
-              />
-            </button>
-
-            <button 
-              onClick={handleDeleteAll}
-              className="w-full flex items-center justify-between p-4 active:bg-zinc-800 transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Trash2 size={20} className="text-red-500" />
-                <span className="text-red-500 font-medium">Delete All Data</span>
-              </div>
+              <Download size={18} /> Export Backup File
             </button>
             
+            <div className="relative w-full">
+              <input 
+                type="file" 
+                accept=".json"
+                onChange={handleImport}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <button className="w-full bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] pointer-events-none">
+                <Upload size={18} /> Import Backup File
+              </button>
+            </div>
           </div>
-        </section>
+
+          {status && (
+            <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10 text-center text-sm font-medium text-white/80 animate-in fade-in zoom-in-95">
+              {status}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

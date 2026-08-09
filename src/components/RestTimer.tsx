@@ -1,27 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, FastForward, Plus, Minus } from 'lucide-react';
+import { FastForward, Plus } from 'lucide-react';
 
 interface RestTimerProps {
   initialSeconds: number;
-  onComplete: () => void;
   onSkip: () => void;
+  onComplete: () => void;
 }
 
-export default function RestTimer({ initialSeconds, onComplete, onSkip }: RestTimerProps) {
+export default function RestTimer({ initialSeconds, onSkip, onComplete }: RestTimerProps) {
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
-  const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
-    let interval: number | undefined;
-    if (isActive && timeLeft > 0) {
-      interval = window.setInterval(() => {
-        setTimeLeft((time) => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
+    if (timeLeft <= 0) {
+      // 3 distinct pulses when the timer finishes
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([100, 100, 100]); 
+      }
       onComplete();
+      return;
     }
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft, onComplete]);
+    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, onComplete]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -29,45 +29,46 @@ export default function RestTimer({ initialSeconds, onComplete, onSkip }: RestTi
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  const addTime = () => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
+    setTimeLeft(prev => prev + 30);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in zoom-in-95 duration-300">
-      <h2 className="text-2xl font-bold text-zinc-400">REST</h2>
+    <div className="flex-1 flex flex-col items-center justify-center animate-in zoom-in-95 fade-in duration-300">
       
-      <div className="text-7xl font-bold text-white tabular-nums tracking-tighter">
-        {formatTime(timeLeft)}
-      </div>
-
-      <div className="flex items-center gap-6">
-        <button 
-          onClick={() => setTimeLeft(t => Math.max(0, t - 30))}
-          className="p-4 bg-zinc-800 rounded-full text-white active:scale-95"
-        >
-          <Minus size={24} />
-        </button>
+      {/* Glassmorphism Glowing Ring */}
+      <div className="relative flex items-center justify-center w-64 h-64 bg-white/[0.03] backdrop-blur-3xl rounded-full border border-white/10 shadow-[0_0_80px_rgba(59,130,246,0.15)] mb-16 mt-8">
+        {/* Animated outer rim */}
+        <div className="absolute inset-0 rounded-full border border-white/5 border-t-blue-500/50 animate-[spin_4s_linear_infinite]" />
+        <div className="absolute inset-4 rounded-full border border-white/5 border-b-blue-400/30 animate-[spin_3s_linear_infinite_reverse]" />
         
-        <button 
-          onClick={() => setIsActive(!isActive)}
-          className="p-6 bg-blue-600 rounded-full text-white active:scale-95 shadow-[0_0_20px_rgba(37,99,235,0.4)]"
-        >
-          {isActive ? <Pause size={32} /> : <Play size={32} />}
-        </button>
-        
-        <button 
-          onClick={() => setTimeLeft(t => t + 30)}
-          className="p-4 bg-zinc-800 rounded-full text-white active:scale-95"
-        >
-          <Plus size={24} />
-        </button>
-      </div>
-
-      <button 
-        onClick={onSkip}
-        className="mt-8 px-8 py-4 bg-zinc-900 border border-zinc-700 rounded-xl text-zinc-300 font-bold active:bg-zinc-800"
-      >
-        <div className="flex items-center gap-2">
-          Skip Rest <FastForward size={20} />
+        <div className="flex flex-col items-center">
+          <span className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Resting</span>
+          <h2 className="text-7xl font-bold text-white tracking-tighter tabular-nums">
+            {formatTime(timeLeft)}
+          </h2>
         </div>
-      </button>
+      </div>
+
+      {/* Controls */}
+      <div className="flex gap-4 w-full px-4">
+        <button 
+          onClick={addTime}
+          className="flex-1 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/10 text-white font-bold py-5 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95"
+        >
+          <Plus size={20} /> 30s
+        </button>
+        <button 
+          onClick={() => {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
+            onSkip();
+          }}
+          className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-bold py-5 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95 border border-blue-500/30"
+        >
+          Skip <FastForward size={20} />
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,82 +1,107 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { TrendingUp, Target } from 'lucide-react';
+import { TrendingUp, Activity, Dumbbell, Flame } from 'lucide-react';
 import { db } from '../db/db';
 
 export default function Progress() {
-  // Pull all workout logs to calculate maximums
-  const logs = useLiveQuery(() => db.workoutLogs.toArray());
+  const pastWorkouts = useLiveQuery(() => db.workoutLogs.toArray());
 
-  // A helper function that scans your entire history to find the heaviest weight lifted for a specific exercise
-  const getMaxWeight = (exerciseName: string) => {
-    if (!logs || logs.length === 0) return 0;
-    
-    let max = 0;
-    logs.forEach(log => {
-      log.exercises.forEach(ex => {
-        if (ex.name === exerciseName) {
-          ex.sets.forEach(set => {
-            if (set.weight > max) {
-              max = set.weight;
-            }
-          });
-        }
+  // Wait for database to load
+  if (!pastWorkouts) {
+    return <div className="p-6 text-white/50">Loading metrics...</div>;
+  }
+
+  // --- STAT CALCULATIONS ---
+  const totalSessions = pastWorkouts.length;
+  
+  // Calculate total volume (reps * weight) across all time
+  let totalVolume = 0;
+  pastWorkouts.forEach(log => {
+    log.exercises.forEach(ex => {
+      ex.sets.forEach(set => {
+        // If bodyweight, we just count the reps for the volume visualization
+        const weightToUse = set.weight > 0 ? set.weight : 1; 
+        totalVolume += (set.reps * weightToUse);
       });
+    });
+  });
+
+  // Helper to find the absolute max weight ever lifted for a specific exercise ID
+  const getMaxWeight = (exerciseId: string) => {
+    let max = 0;
+    pastWorkouts.forEach(log => {
+      const exercise = log.exercises.find(ex => ex.exerciseId === exerciseId);
+      if (exercise) {
+        exercise.sets.forEach(set => {
+          if (set.weight > max) max = set.weight;
+        });
+      }
     });
     return max;
   };
 
-  // Define the exercises you want to track on the dashboard
-  const personalRecords = [
-    { name: 'Machine Chest Press', value: getMaxWeight('Machine Chest Press'), unit: 'kg' },
-    { name: 'Linear Hack Press', value: getMaxWeight('Linear Hack Press'), unit: 'kg' },
-    { name: 'Pull-Ups (Added Weight)', value: getMaxWeight('Pull-Ups'), unit: 'kg' },
+  const keyLifts = [
+    { name: 'Machine Chest Press', max: getMaxWeight('machine-chest-press') },
+    { name: 'Linear Hack Press', max: getMaxWeight('linear-hack-press') },
+    { name: 'Lat Pulldown', max: getMaxWeight('lat-pulldown-machine') },
   ];
 
   return (
-    <div className="p-6 pb-24 h-full flex flex-col">
+    <div className="p-6 pb-24 h-full flex flex-col animate-in fade-in">
       <header className="mb-8 mt-4">
         <h1 className="text-3xl font-bold text-white tracking-tight">Progress</h1>
-        <p className="text-zinc-400 mt-1">Track your strength and bulking goals.</p>
+        <p className="text-white/60 mt-1">Your journey in numbers.</p>
       </header>
-      
-      <div className="space-y-8">
-        
-        {/* Strength Progress Section */}
-        <section>
-          <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <TrendingUp size={18} className="text-blue-500" /> Personal Records
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            {personalRecords.map(pr => (
-              <div key={pr.name} className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
-                <p className="text-zinc-400 text-xs font-bold uppercase mb-3 leading-tight">{pr.name}</p>
-                <p className="text-3xl font-bold text-white tracking-tighter">
-                  {pr.value} <span className="text-lg text-zinc-500 font-medium">{pr.unit}</span>
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-        
-        {/* Bodyweight Tracking Section */}
-        <section>
-          <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Target size={18} className="text-green-500" /> Bulking Progress
-          </h2>
-          <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex justify-between items-center">
-            <div>
-              <p className="text-zinc-400 text-sm mb-1">Current Weight</p>
-              <p className="text-2xl font-bold text-white tracking-tighter">
-                68.0 <span className="text-lg text-zinc-500 font-medium">kg</span>
-              </p>
-            </div>
-            <button className="bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-white font-bold py-3 px-5 rounded-xl text-sm transition-all">
-              Log Weight
-            </button>
-          </div>
-        </section>
 
+      {/* Top Level Stats */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity size={16} className="text-blue-400" />
+            <h3 className="text-xs font-bold text-white/50 uppercase tracking-widest">Sessions</h3>
+          </div>
+          <p className="text-4xl font-bold text-white">{totalSessions}</p>
+        </div>
+
+        <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <Flame size={16} className="text-orange-400" />
+            <h3 className="text-xs font-bold text-white/50 uppercase tracking-widest">Volume</h3>
+          </div>
+          <p className="text-4xl font-bold text-white">
+            {totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume}
+          </p>
+        </div>
       </div>
+
+      {/* Progressive Overload Tracker */}
+      <h2 className="text-xl font-bold text-white mb-4 mt-2 tracking-tight flex items-center gap-2">
+        <TrendingUp className="text-green-400" size={20}/> Lifetime PRs
+      </h2>
+      
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg space-y-5">
+        {keyLifts.map((lift, i) => (
+          <div key={i} className="flex justify-between items-center group">
+            <div className="flex items-center gap-3">
+              <div className="bg-black/20 p-2 rounded-xl border border-white/5">
+                <Dumbbell size={16} className="text-white/50" />
+              </div>
+              <span className="text-white font-medium">{lift.name}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-xl font-bold text-white">
+                {lift.max > 0 ? lift.max : '--'}
+              </span>
+              <span className="text-white/50 text-xs ml-1">kg</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {totalSessions === 0 && (
+        <div className="mt-8 text-center text-white/40 text-sm p-6 bg-white/5 rounded-3xl border border-white/5 border-dashed">
+          Complete your first workout to start generating insights.
+        </div>
+      )}
     </div>
   );
 }

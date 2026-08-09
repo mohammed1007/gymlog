@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target } from 'lucide-react';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle } from 'lucide-react';
 import RestTimer from '../components/RestTimer';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
@@ -63,6 +63,7 @@ export default function Workout() {
   ]);
 
   const toggleWarmup = (id: number) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
     setWarmup(warmup.map(w => w.id === id ? { ...w, done: !w.done } : w));
   };
 
@@ -78,9 +79,7 @@ export default function Workout() {
   };
 
   const handleLogSet = () => {
-    // Fire a subtle 50ms physical taptic pulse
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
-
     const currentExercise = exercises[currentExerciseIndex];
     if (!currentExercise) return;
 
@@ -96,17 +95,23 @@ export default function Workout() {
     if (currentSet < (currentExercise.defaultSets || 3)) {
       setCurrentState('rest');
     } else {
-      setWorkoutLog(prev => [...prev, {
+      // Commit completed exercise
+      const updatedLog = [...workoutLog, {
         exerciseId: currentExercise.id,
         name: currentExercise.name,
         sets: updatedSets
-      }]);
-      
+      }];
+      setWorkoutLog(updatedLog);
       setCurrentExerciseSets([]);
+      setCurrentSet(1);
       
-      if (currentExerciseIndex < exercises.length - 1) {
-        setCurrentExerciseIndex(prev => prev + 1);
-        setCurrentSet(1);
+      // Find the next incomplete exercise
+      const nextIncompleteIndex = exercises.findIndex(
+        ex => !updatedLog.some(log => log.exerciseId === ex.id)
+      );
+
+      if (nextIncompleteIndex !== -1) {
+        setCurrentExerciseIndex(nextIncompleteIndex);
         setCurrentState('working-sets');
       } else {
         setCurrentState('cooldown');
@@ -115,6 +120,7 @@ export default function Workout() {
   };
 
   const handleFinishWorkout = async () => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([50, 50, 50]);
     const durationMs = Date.now() - startTime;
     await db.workoutLogs.add({
       date: new Date().toISOString(),
@@ -228,10 +234,11 @@ export default function Workout() {
 
   const renderWorkingSets = () => {
     const currentExercise = exercises[currentExerciseIndex];
-    const isBodyweight = currentExercise?.progressionType === 'bodyweight';
+    if (!currentExercise) return null;
+    const isBodyweight = currentExercise.progressionType === 'bodyweight';
 
     let previousPerformance: ExerciseSet[] = [];
-    if (pastWorkouts && currentExercise) {
+    if (pastWorkouts) {
       const lastWorkoutWithExercise = pastWorkouts.find(log => 
         log.exercises.some(ex => ex.exerciseId === currentExercise.id)
       );
@@ -244,21 +251,56 @@ export default function Workout() {
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4">
+        
+        {/* Dynamic Exercise Navigator (Skip / Swap Machine) */}
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
+          {exercises.map((ex, idx) => {
+            const isDone = workoutLog.some(log => log.exerciseId === ex.id);
+            const isActive = idx === currentExerciseIndex;
+            return (
+              <button
+                key={ex.id}
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
+                  setCurrentExerciseIndex(idx);
+                  setCurrentSet(1);
+                  setCurrentExerciseSets([]);
+                }}
+                className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                  isActive 
+                    ? 'bg-blue-500 border-blue-400 text-white shadow-lg' 
+                    : isDone 
+                      ? 'bg-white/5 border-white/5 text-white/30'
+                      : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  {isDone && <Check size={12} />}
+                  {ex.name}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Header */}
-        <div className="mb-6 mt-4">
+        <div className="mb-6">
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">
             Exercise {currentExerciseIndex + 1} of {exercises.length}
           </p>
           <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">
-            {currentExercise?.name}
+            {currentExercise.name}
           </h2>
-          <p className="text-white/50 font-medium mt-2">
-            Target: {currentExercise?.defaultSets} sets × {currentExercise?.minReps}–{currentExercise?.maxReps} reps
+          <p className="text-white/50 font-medium mt-2 flex items-center justify-between">
+            <span>Target: {currentExercise.defaultSets} sets × {currentExercise.minReps}–{currentExercise.maxReps} reps</span>
+            <button className="flex items-center gap-1 text-white/40 hover:text-white/80 bg-white/5 px-2 py-1 rounded-lg text-xs">
+              <Shuffle size={12} /> Swap
+            </button>
           </p>
         </div>
 
         <div className="flex-1 space-y-6">
-          {/* THE TARGET PANEL: Shows all previous sets clearly */}
+          {/* THE TARGET PANEL */}
           {previousPerformance.length > 0 && (
             <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
@@ -377,7 +419,7 @@ export default function Workout() {
   if (!allExercises) return <div className="p-6 text-white/50">Loading workout plans...</div>;
 
   return (
-    <div className="p-6 pb-24 h-full flex flex-col">
+    <div className="p-6 pb-24 h-full flex flex-col overflow-x-hidden">
       {currentState === 'select-day' && renderDaySelection()}
       {currentState === 'general-warmup' && renderGeneralWarmup()}
       {currentState === 'working-sets' && renderWorkingSets()}
