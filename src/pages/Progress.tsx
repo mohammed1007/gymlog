@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { TrendingUp, Activity, Dumbbell, Flame, Scale, Plus, CheckSquare, Square } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, Activity, Dumbbell, Flame, Scale, Plus, CheckSquare, Square, Target } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { db } from '../db/db';
 
 export default function Progress() {
   const pastWorkouts = useLiveQuery(() => db.workoutLogs.toArray());
   const bodyweightHistory = useLiveQuery(() => db.bodyweightLogs.orderBy('date').reverse().toArray());
+  const allExercises = useLiveQuery(() => db.exercises.toArray());
   
   // Dynamic Habits
   const todayKey = new Date().toISOString().split('T')[0];
@@ -15,20 +16,40 @@ export default function Progress() {
 
   const [weightInput, setWeightInput] = useState('');
 
-  if (!pastWorkouts || !bodyweightHistory) {
+  if (!pastWorkouts || !bodyweightHistory || !allExercises) {
     return <div className="p-6 text-white/50">Loading metrics...</div>;
   }
 
+  // --- STAT CALCULATIONS ---
   const totalSessions = pastWorkouts.length;
   let totalVolume = 0;
+  
+  // Muscle Balance Calculation (Total Sets per Group)
+  const muscleBalance: Record<string, number> = {
+    Chest: 0, Back: 0, Legs: 0, Shoulders: 0, Arms: 0, Core: 0
+  };
+
   pastWorkouts.forEach(log => {
-    log.exercises.forEach(ex => {
-      ex.sets.forEach(set => {
+    log.exercises.forEach(exLog => {
+      // Add to volume
+      exLog.sets.forEach(set => {
         const weightToUse = set.weight > 0 ? set.weight : 1; 
         totalVolume += (set.reps * weightToUse);
       });
+
+      // Add to muscle balance
+      const exerciseDef = allExercises.find(e => e.id === exLog.exerciseId);
+      if (exerciseDef && muscleBalance[exerciseDef.muscleGroup] !== undefined) {
+        muscleBalance[exerciseDef.muscleGroup] += exLog.sets.length;
+      }
     });
   });
+
+  // Format data for the Radar Chart
+  const radarData = Object.keys(muscleBalance).map(key => ({
+    muscle: key,
+    sets: muscleBalance[key]
+  }));
 
   const getMaxWeight = (exerciseId: string) => {
     let max = 0;
@@ -86,12 +107,12 @@ export default function Progress() {
   };
 
   return (
-    // FIX: Changed from 'h-full pb-36' to 'min-h-full'. App.tsx handles the bottom padding automatically.
     <div className="p-6 min-h-full flex flex-col animate-in fade-in">
       <header className="mb-8 mt-4">
         <h1 className="text-3xl font-bold text-white tracking-tight">Progress</h1>
       </header>
 
+      {/* Top Stats */}
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5">
           <div className="flex items-center gap-2 mb-3"><Activity size={16} className="text-blue-400" /><h3 className="text-xs font-bold text-white/50 uppercase">Sessions</h3></div>
@@ -103,6 +124,29 @@ export default function Progress() {
         </div>
       </div>
 
+      {/* NEW: Muscle Balance Radar */}
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Target className="text-blue-400" size={20}/> Training Balance</h2>
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
+        <p className="text-white/50 text-xs mb-2">Total working sets per muscle group.</p>
+        {totalSessions > 0 ? (
+          <div className="h-56 w-full -ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                <PolarAngleAxis dataKey="muscle" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 'dataMax + 2']} tick={false} axisLine={false} />
+                <Radar name="Sets" dataKey="sets" stroke="#60a5fa" strokeWidth={2} fill="#60a5fa" fillOpacity={0.3} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-48 flex items-center justify-center border border-dashed border-white/10 rounded-2xl">
+            <p className="text-white/30 text-sm">Complete a workout to see balance.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Daily Protocol */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Flame className="text-amber-400" size={20}/> Daily Protocol</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
         {allHabits?.map(habit => {
@@ -117,6 +161,7 @@ export default function Progress() {
         {allHabits?.length === 0 && <p className="text-white/30 text-xs">Add items in Settings.</p>}
       </div>
 
+      {/* Mass Tracker */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Scale className="text-purple-400" size={20}/> Mass Tracker</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
         <div className="flex gap-3">
@@ -140,6 +185,7 @@ export default function Progress() {
         )}
       </div>
 
+      {/* Max Lifts */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="text-green-400" size={20}/> All-Time Max Lifts</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 space-y-5">
         {keyLifts.map((lift, i) => (
