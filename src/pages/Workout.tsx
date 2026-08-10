@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle, Zap, Info, Calculator, X } from 'lucide-react';
-import RestTimer from '../components/RestTimer';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X } from 'lucide-react';import RestTimer from '../components/RestTimer';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
 type WorkoutState = 'select-day' | 'general-warmup' | 'working-sets' | 'rest' | 'cooldown' | 'summary';
