@@ -59,16 +59,20 @@ export default function Workout() {
 
   const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
   
-  // Resolve exercises along with their custom planned set counts
-  const routineItems = activeTemplate?.exercises || [];
-  const exercises: (ExerciseDefinition & { plannedSets: number })[] = (allExercises && activeTemplate)
-    ? routineItems
-        .map(item => {
-          const exDef = allExercises.find(e => e.id === item.exerciseId);
-          return exDef ? { ...exDef, plannedSets: item.sets } : null;
-        })
-        .filter((e): e is (ExerciseDefinition & { plannedSets: number }) => e !== null)
-    : [];
+  const routineItems = activeTemplate?.exercises || (activeTemplate as any)?.exerciseIds?.map((id: string) => ({ exerciseId: id, sets: 3 })) || [];
+  
+  // Cleanly resolved exercises using a type-safe loop
+  const exercises: (ExerciseDefinition & { plannedSets: number })[] = [];
+  if (allExercises && activeTemplate) {
+    for (const item of routineItems) {
+      const exId = typeof item === 'string' ? item : (item as any)?.exerciseId;
+      const setCnt = typeof item === 'string' ? 3 : ((item as any)?.sets || 3);
+      const exDef = allExercises.find((e: ExerciseDefinition) => e.id === exId);
+      if (exDef) {
+        exercises.push({ ...exDef, plannedSets: setCnt });
+      }
+    }
+  }
 
   const [warmup, setWarmup] = useState([
     { id: 1, text: '5 min cardio (Treadmill/Bike)', done: false },
@@ -188,8 +192,12 @@ export default function Workout() {
         <div className="space-y-4 flex-1">
           {storedTemplates.map(template => {
             const isCompleted = completedDays.includes(template.dayKey);
+            const templateExercises = template.exercises || (template as any).exerciseIds || [];
             const templateExerciseNames = allExercises 
-              ? template.exercises.map(item => allExercises.find(e => e.id === item.exerciseId)?.name).filter(Boolean).join(', ')
+              ? templateExercises.map((item: any) => {
+                  const id = typeof item === 'string' ? item : item.exerciseId;
+                  return allExercises.find((e: ExerciseDefinition) => e.id === id)?.name;
+                }).filter(Boolean).join(', ')
               : 'Loading exercises...';
 
             return (
@@ -216,7 +224,7 @@ export default function Workout() {
                 <p className="text-white/50 text-xs mt-1 line-clamp-2">{templateExerciseNames || 'No exercises added yet.'}</p>
 
                 <button 
-                  disabled={template.exercises.length === 0}
+                  disabled={templateExercises.length === 0}
                   onClick={() => startDay(template.dayKey)}
                   className="w-full mt-5 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all"
                 >
@@ -380,7 +388,7 @@ export default function Workout() {
                     type="text" 
                     inputMode="decimal"
                     value={weight} 
-                    onChange={(e) => setWeight(e.target.value)} 
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWeight(e.target.value)} 
                     className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/25" 
                     placeholder="0" 
                   />
@@ -393,7 +401,7 @@ export default function Workout() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={reps} 
-                  onChange={(e) => setReps(e.target.value)} 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReps(e.target.value)} 
                   className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/25" 
                   placeholder="0" 
                   autoFocus 
