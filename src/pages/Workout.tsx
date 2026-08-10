@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle, Zap } from 'lucide-react';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle, Zap, Info, Calculator, X } from 'lucide-react';
 import RestTimer from '../components/RestTimer';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
@@ -12,8 +12,8 @@ export default function Workout() {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [isWeighted, setIsWeighted] = useState(false);
+  const [showPlateModal, setShowPlateModal] = useState(false);
   
-  // Manual state preserved with localStorage
   const [completedDays, setCompletedDays] = useState<string[]>(() => {
     const saved = localStorage.getItem('gym_completed_days');
     return saved ? JSON.parse(saved) : [];
@@ -34,12 +34,10 @@ export default function Workout() {
   const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
   const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
   
-  // Dexie Queries
   const allExercises = useLiveQuery(() => db.exercises.toArray());
   const storedTemplates = useLiveQuery(() => db.routineTemplates.toArray());
   const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
 
-  // Automatically sync imported or finished workouts for today into completedDays
   useEffect(() => {
     if (!pastWorkouts || !storedTemplates) return;
     const todayStr = new Date().toISOString().split('T')[0];
@@ -53,15 +51,12 @@ export default function Workout() {
     if (loggedDayKeys.length > 0) {
       setCompletedDays(prev => {
         const combined = Array.from(new Set([...prev, ...loggedDayKeys]));
-        if (combined.length !== prev.length) {
-          return combined;
-        }
+        if (combined.length !== prev.length) return combined;
         return prev;
       });
     }
   }, [pastWorkouts, storedTemplates]);
 
-  // Dynamically resolve exercises for selected day
   const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
   const exercises: ExerciseDefinition[] = (allExercises && activeTemplate)
     ? activeTemplate.exerciseIds
@@ -146,6 +141,24 @@ export default function Workout() {
       setCompletedDays(updated);
     }
     setCurrentState('summary');
+  };
+
+  // --- PLATE CALCULATOR LOGIC (Per Side) ---
+  const getPlateBreakdown = (totalWeight: number) => {
+    // Assuming standard 20kg bar/sled baseline, remainder split across 2 sides
+    const netWeight = Math.max(0, totalWeight - 20);
+    let perSide = netWeight / 2;
+    const plates = [25, 20, 15, 10, 5, 2.5, 1.25];
+    const breakdown: { plate: number; count: number }[] = [];
+
+    for (const p of plates) {
+      if (perSide >= p) {
+        const count = Math.floor(perSide / p);
+        breakdown.push({ plate: p, count });
+        perSide %= p;
+      }
+    }
+    return breakdown;
   };
 
   const renderDaySelection = () => {
@@ -258,6 +271,7 @@ export default function Workout() {
     }
 
     const shouldOverload = previousPerformance.some(set => set.reps >= currentExercise.maxReps);
+    const plateBreakdown = getPlateBreakdown(Number(weight) || 0);
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4">
@@ -282,13 +296,18 @@ export default function Workout() {
           })}
         </div>
 
+        {/* Header */}
         <div className="mb-6">
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
           <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
-          <p className="text-white/50 font-medium mt-2 flex items-center justify-between">
-            <span>Target: {currentExercise.defaultSets} sets × {currentExercise.minReps}–{currentExercise.maxReps} reps</span>
-            <button className="flex items-center gap-1 text-white/40 hover:text-white/80 bg-white/5 px-2 py-1 rounded-lg text-xs"><Shuffle size={12} /> Swap</button>
-          </p>
+          
+          {/* Posture & Setup Reminder Note */}
+          {currentExercise.notes && (
+            <div className="mt-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3.5 flex items-start gap-3">
+              <Info size={16} className="text-blue-400 shrink-0 mt-0.5" />
+              <p className="text-blue-200/90 text-xs font-medium leading-relaxed">{currentExercise.notes}</p>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 space-y-6">
@@ -330,15 +349,24 @@ export default function Workout() {
             </div>
           )}
 
+          {/* Input Area with Plate Calculator Button */}
           <div className="bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-3xl p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-white font-bold text-lg">Log Set {currentSet}</h3>
-              {isBodyweight && (
-                <button onClick={() => setIsWeighted(!isWeighted)} className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
-                  {isWeighted ? 'Weighted Calisthenics' : '+ Add Weight'}
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {!isBodyweight && Number(weight) > 20 && (
+                  <button onClick={() => setShowPlateModal(true)} className="text-xs bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-bold flex items-center gap-1">
+                    <Calculator size={12} /> Plates
+                  </button>
+                )}
+                {isBodyweight && (
+                  <button onClick={() => setIsWeighted(!isWeighted)} className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                    {isWeighted ? 'Weighted' : '+ Weight'}
+                  </button>
+                )}
+              </div>
             </div>
+
             <div className={`grid ${(!isBodyweight || isWeighted) ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
               {(!isBodyweight || isWeighted) && (
                 <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
@@ -357,6 +385,27 @@ export default function Workout() {
         <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/30 text-white font-bold text-lg py-5 rounded-[2rem] flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
           <Check size={24} /> Complete Set {currentSet}
         </button>
+
+        {/* Plate Calculator Modal */}
+        {showPlateModal && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl p-6 flex flex-col justify-center items-center animate-in fade-in">
+            <div className="bg-white/[0.08] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
+              <button onClick={() => setShowPlateModal(false)} className="absolute top-5 right-5 text-white/50 hover:text-white"><X size={20} /></button>
+              <h3 className="text-xl font-bold text-white mb-1">Plate Breakdown</h3>
+              <p className="text-white/50 text-xs mb-6">Per side (Assuming 20kg bar/sled)</p>
+              <div className="space-y-2 mb-6">
+                {plateBreakdown.map((item, i) => (
+                  <div key={i} className="flex justify-between items-center bg-black/30 px-4 py-3 rounded-2xl border border-white/5">
+                    <span className="text-white font-bold text-lg">{item.plate} kg plate</span>
+                    <span className="text-blue-400 font-bold text-lg">× {item.count}</span>
+                  </div>
+                ))}
+                {plateBreakdown.length === 0 && <p className="text-white/40 text-center py-4 text-sm">Weight too low for extra plates.</p>}
+              </div>
+              <button onClick={() => setShowPlateModal(false)} className="w-full bg-blue-500 text-white font-bold py-3.5 rounded-2xl">Got it</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };

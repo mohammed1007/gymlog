@@ -44,7 +44,8 @@ export interface ExerciseDefinition {
   defaultSets: number;
   minReps: number;
   maxReps: number;
-  restSeconds?: number; // <-- Added for time efficiency
+  restSeconds?: number;
+  notes?: string; // <-- NEW: Posture & Setup Reminders
 }
 
 export interface RoutineTemplate {
@@ -62,7 +63,8 @@ export class GymDatabase extends Dexie {
 
   constructor() {
     super('GymLogDatabase');
-    this.version(4).stores({
+    // Bumped to version 5 for exercise notes
+    this.version(5).stores({
       workoutLogs: '++id, date, templateName',
       bodyweightLogs: '++id, date',
       dailyHabits: 'date',
