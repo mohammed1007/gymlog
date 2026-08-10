@@ -31,7 +31,6 @@ export interface DailyHabitsLog {
   surplusMeals: boolean;
 }
 
-// Added muscleGroup and equipment here to fix the red underline!
 export interface ExerciseDefinition {
   id: string;
   name: string;
@@ -43,19 +42,26 @@ export interface ExerciseDefinition {
   maxReps: number;
 }
 
+export interface RoutineTemplate {
+  dayKey: string; // 'Day A' | 'Day B' | 'Day C'
+  exerciseIds: string[];
+}
+
 export class GymDatabase extends Dexie {
   workoutLogs!: Table<CompletedWorkout, number>;
   bodyweightLogs!: Table<BodyweightLog, number>;
   dailyHabits!: Table<DailyHabitsLog, string>;
   exercises!: Table<ExerciseDefinition, string>;
+  routineTemplates!: Table<RoutineTemplate, string>;
 
   constructor() {
     super('GymLogDatabase');
-    this.version(2).stores({
+    this.version(3).stores({
       workoutLogs: '++id, date, templateName',
       bodyweightLogs: '++id, date',
       dailyHabits: 'date',
-      exercises: 'id'
+      exercises: 'id',
+      routineTemplates: 'dayKey'
     });
   }
 }

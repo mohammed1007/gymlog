@@ -1,37 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle } from 'lucide-react';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle, Edit3, Trash2, Plus, X } from 'lucide-react';
 import RestTimer from '../components/RestTimer';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
 type WorkoutState = 'select-day' | 'general-warmup' | 'working-sets' | 'rest' | 'cooldown' | 'summary';
-
-const WORKOUT_PLANS: Record<string, string[]> = {
-  'Day A': [
-    'machine-chest-press', 'pull-ups', 'chest-supported-row-machine', 'linear-hack-press',
-    'mts-leg-extension', 'mts-kneeling-leg-curl', 'lateral-raise-machine', 'machine-preacher-curl',
-    'triceps-press-machine', 'hanging-leg-raises'
-  ],
-  'Day B': [
-    'incline-chest-press-machine', 'lat-pulldown-machine', 'seated-row-machine', 'leg-press-machine',
-    'leg-extension-machine', 'mts-kneeling-leg-curl', 'hip-abduction', 'shoulder-press-machine',
-    'reverse-pec-deck', 'machine-preacher-curl', 'triceps-press-machine'
-  ],
-  'Day C': [
-    'machine-chest-press', 'dips', 'pull-ups', 'chest-supported-row-machine', 'linear-hack-press',
-    'leg-extension-machine', 'mts-kneeling-leg-curl', 'hip-abduction', 'calf-raise-machine',
-    'lateral-raise-machine', 'reverse-pec-deck', 'hanging-leg-raises'
-  ]
-};
 
 export default function Workout() {
   const [currentState, setCurrentState] = useState<WorkoutState>('select-day');
   const [selectedDayKey, setSelectedDayKey] = useState<string>('Day A');
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
-  
-  // State for weighted calisthenics toggle (declared at top level)
   const [isWeighted, setIsWeighted] = useState(false);
+
+  // Routine Editing Modal State
+  const [editingDayKey, setEditingDayKey] = useState<string | null>(null);
+  const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
   
   const [completedDays, setCompletedDays] = useState<string[]>(() => {
     const saved = localStorage.getItem('gym_completed_days');
@@ -42,7 +26,6 @@ export default function Workout() {
     localStorage.setItem('gym_completed_days', JSON.stringify(completedDays));
   }, [completedDays]);
 
-  // Reset weighted toggle when changing exercises
   useEffect(() => {
     setIsWeighted(false);
   }, [currentExerciseIndex]);
@@ -54,11 +37,15 @@ export default function Workout() {
   const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
   const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
   
+  // Dexie Queries
   const allExercises = useLiveQuery(() => db.exercises.toArray());
+  const storedTemplates = useLiveQuery(() => db.routineTemplates.toArray());
   const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
 
-  const exercises: ExerciseDefinition[] = allExercises 
-    ? WORKOUT_PLANS[selectedDayKey]
+  // Dynamically resolve exercises for selected day
+  const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
+  const exercises: ExerciseDefinition[] = (allExercises && activeTemplate)
+    ? activeTemplate.exerciseIds
         .map(id => allExercises.find(e => e.id === id))
         .filter((e): e is ExerciseDefinition => e !== undefined)
     : [];
@@ -142,11 +129,33 @@ export default function Workout() {
     setCurrentState('summary');
   };
 
+  // Routine Edit Functions
+  const handleRemoveExerciseFromRoutine = async (dayKey: string, exerciseId: string) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
+    const template = storedTemplates?.find(t => t.dayKey === dayKey);
+    if (!template) return;
+    
+    const updatedIds = template.exerciseIds.filter(id => id !== exerciseId);
+    await db.routineTemplates.put({ dayKey, exerciseIds: updatedIds });
+  };
+
+  const handleAddExerciseToRoutine = async (dayKey: string, exerciseId: string) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
+    const template = storedTemplates?.find(t => t.dayKey === dayKey);
+    if (!template) return;
+    
+    if (!template.exerciseIds.includes(exerciseId)) {
+      const updatedIds = [...template.exerciseIds, exerciseId];
+      await db.routineTemplates.put({ dayKey, exerciseIds: updatedIds });
+    }
+    setShowAddExerciseModal(false);
+  };
+
   const renderDaySelection = () => {
     const days = [
-      { key: 'Day A', desc: 'Chest Press, Pull-Ups, Hack Squat' },
-      { key: 'Day B', desc: 'Incline Press, Lat Pulldown, Leg Press' },
-      { key: 'Day C', desc: 'Chest Press, Dips, Pull-Ups' },
+      { key: 'Day A', title: 'Day A — Full Body' },
+      { key: 'Day B', title: 'Day B — Full Body' },
+      { key: 'Day C', title: 'Day C — Full Body' },
     ];
 
     return (
@@ -169,17 +178,21 @@ export default function Workout() {
         <div className="space-y-4 flex-1">
           {days.map(day => {
             const isCompleted = completedDays.includes(day.key);
+            const template = storedTemplates?.find(t => t.dayKey === day.key);
+            const templateExerciseNames = template && allExercises 
+              ? template.exerciseIds.map(id => allExercises.find(e => e.id === id)?.name).filter(Boolean).join(', ')
+              : 'Loading exercises...';
+
             return (
-              <button
+              <div 
                 key={day.key}
-                onClick={() => startDay(day.key)}
-                className={`w-full text-left p-6 rounded-[2rem] border transition-all flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
+                className={`w-full p-6 rounded-[2rem] border transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
                   isCompleted 
                     ? 'bg-white/[0.02] border-white/5 opacity-50' 
-                    : 'bg-white/[0.08] backdrop-blur-xl border-white/10 hover:bg-white/[0.12]'
+                    : 'bg-white/[0.08] backdrop-blur-xl border-white/10'
                 }`}
               >
-                <div>
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <span className="text-blue-400 font-bold text-sm tracking-widest uppercase">{day.key}</span>
                     {isCompleted && (
@@ -188,14 +201,126 @@ export default function Workout() {
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold text-white mt-1">Full Body</h3>
-                  <p className="text-white/50 text-sm mt-1">{day.desc}</p>
+                  <button 
+                    onClick={() => setEditingDayKey(day.key)}
+                    className="p-2 text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                    title="Edit Routine"
+                  >
+                    <Edit3 size={16} />
+                  </button>
                 </div>
-                <ArrowRight className="text-white/30" size={24} />
-              </button>
+
+                <h3 className="text-xl font-bold text-white">{day.title}</h3>
+                <p className="text-white/50 text-xs mt-1 line-clamp-2">{templateExerciseNames}</p>
+
+                <button 
+                  onClick={() => startDay(day.key)}
+                  className="w-full mt-5 bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all"
+                >
+                  Start Workout <ArrowRight size={18} />
+                </button>
+              </div>
             );
           })}
         </div>
+
+        {/* Routine Customization Modal */}
+        {editingDayKey && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl p-6 flex flex-col animate-in fade-in">
+            <div className="flex justify-between items-center mb-6 mt-4">
+              <div>
+                <h3 className="text-2xl font-bold text-white tracking-tight">Edit {editingDayKey}</h3>
+                <p className="text-white/50 text-xs mt-1">Add or remove exercises in this template.</p>
+              </div>
+              <button 
+                onClick={() => setEditingDayKey(null)}
+                className="p-3 bg-white/10 rounded-full text-white/70 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {storedTemplates?.find(t => t.dayKey === editingDayKey)?.exerciseIds.map((exId) => {
+                const ex = allExercises?.find(e => e.id === exId);
+                return (
+                  <div key={exId} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl">
+                    <div>
+                      <p className="text-white font-bold">{ex?.name || exId}</p>
+                      <p className="text-white/40 text-xs">{ex?.muscleGroup} • {ex?.equipment}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleRemoveExerciseFromRoutine(editingDayKey, exId)}
+                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-4 space-y-3">
+              <button 
+                onClick={() => setShowAddExerciseModal(true)}
+                className="w-full bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
+              >
+                <Plus size={20} /> Add Exercise
+              </button>
+              <button 
+                onClick={() => setEditingDayKey(null)}
+                className="w-full bg-white text-black font-bold py-4 rounded-2xl"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Add Exercise Picker Overlay */}
+        {showAddExerciseModal && editingDayKey && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl p-6 flex flex-col animate-in zoom-in-95">
+            <div className="flex justify-between items-center mb-6 mt-4">
+              <h3 className="text-2xl font-bold text-white tracking-tight">Select Exercise</h3>
+              <button 
+                onClick={() => setShowAddExerciseModal(false)}
+                className="p-3 bg-white/10 rounded-full text-white/70 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {allExercises?.map((ex) => {
+                const currentTemplate = storedTemplates?.find(t => t.dayKey === editingDayKey);
+                const isAlreadyInRoutine = currentTemplate?.exerciseIds.includes(ex.id);
+
+                return (
+                  <button
+                    key={ex.id}
+                    disabled={isAlreadyInRoutine}
+                    onClick={() => handleAddExerciseToRoutine(editingDayKey, ex.id)}
+                    className={`w-full text-left p-4 rounded-2xl border flex justify-between items-center transition-all ${
+                      isAlreadyInRoutine 
+                        ? 'bg-white/5 border-white/5 opacity-40' 
+                        : 'bg-white/10 border-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    <div>
+                      <p className="text-white font-bold">{ex.name}</p>
+                      <p className="text-white/40 text-xs">{ex.muscleGroup} • {ex.equipment}</p>
+                    </div>
+                    {isAlreadyInRoutine ? (
+                      <span className="text-xs text-white/40">Added</span>
+                    ) : (
+                      <Plus size={18} className="text-blue-400" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -306,7 +431,7 @@ export default function Workout() {
         </div>
 
         <div className="flex-1 space-y-6">
-          {/* THE TARGET PANEL */}
+          {/* Target Panel */}
           {previousPerformance.length > 0 && (
             <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
@@ -326,7 +451,7 @@ export default function Workout() {
             </div>
           )}
 
-          {/* Current Session Progress */}
+          {/* Today's Sets */}
           {currentExerciseSets.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3 ml-2">Today</h4>

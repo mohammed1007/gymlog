@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { TrendingUp, Activity, Dumbbell, Flame, Scale, Plus, ArrowUpRight, ArrowDownRight, CheckSquare, Square, PieChart } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, Activity, Dumbbell, Flame, Scale, Plus, CheckSquare, Square } from 'lucide-react';import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { db } from '../db/db';
 
 export default function Progress() {
