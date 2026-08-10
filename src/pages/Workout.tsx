@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X } from 'lucide-react';import RestTimer from '../components/RestTimer';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X } from 'lucide-react';
+import RestTimer from '../components/RestTimer';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
 type WorkoutState = 'select-day' | 'general-warmup' | 'working-sets' | 'rest' | 'cooldown' | 'summary';
@@ -142,9 +143,7 @@ export default function Workout() {
     setCurrentState('summary');
   };
 
-  // --- PLATE CALCULATOR LOGIC (Per Side) ---
   const getPlateBreakdown = (totalWeight: number) => {
-    // Assuming standard 20kg bar/sled baseline, remainder split across 2 sides
     const netWeight = Math.max(0, totalWeight - 20);
     let perSide = netWeight / 2;
     const plates = [25, 20, 15, 10, 5, 2.5, 1.25];
@@ -295,12 +294,10 @@ export default function Workout() {
           })}
         </div>
 
-        {/* Header */}
         <div className="mb-6">
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
           <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
           
-          {/* Posture & Setup Reminder Note */}
           {currentExercise.notes && (
             <div className="mt-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3.5 flex items-start gap-3">
               <Info size={16} className="text-blue-400 shrink-0 mt-0.5" />
@@ -348,7 +345,6 @@ export default function Workout() {
             </div>
           )}
 
-          {/* Input Area with Plate Calculator Button */}
           <div className="bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-3xl p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-white font-bold text-lg">Log Set {currentSet}</h3>
@@ -370,12 +366,28 @@ export default function Workout() {
               {(!isBodyweight || isWeighted) && (
                 <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
                   <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">{isBodyweight ? 'Added Weight (kg)' : 'Weight (kg)'}</label>
-                  <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" placeholder="0" />
+                  <input 
+                    type="number" 
+                    inputMode="decimal"
+                    value={weight} 
+                    onChange={(e) => setWeight(e.target.value)} 
+                    className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" 
+                    placeholder="0" 
+                  />
                 </div>
               )}
               <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
                 <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">Reps</label>
-                <input type="number" value={reps} onChange={(e) => setReps(e.target.value)} className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" placeholder="0" autoFocus />
+                <input 
+                  type="number" 
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={reps} 
+                  onChange={(e) => setReps(e.target.value)} 
+                  className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" 
+                  placeholder="0" 
+                  autoFocus 
+                />
               </div>
             </div>
           </div>
@@ -385,7 +397,6 @@ export default function Workout() {
           <Check size={24} /> Complete Set {currentSet}
         </button>
 
-        {/* Plate Calculator Modal */}
         {showPlateModal && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl p-6 flex flex-col justify-center items-center animate-in fade-in">
             <div className="bg-white/[0.08] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
