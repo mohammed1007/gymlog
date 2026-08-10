@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { TrendingUp, Activity, Dumbbell, Flame, Scale, Plus, CheckSquare, Square, Target } from 'lucide-react';
+import { TrendingUp, Activity, Dumbbell, Flame, Scale, Plus, CheckSquare, Square, Target, Award } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { db } from '../db/db';
 
@@ -9,7 +9,6 @@ export default function Progress() {
   const bodyweightHistory = useLiveQuery(() => db.bodyweightLogs.orderBy('date').reverse().toArray());
   const allExercises = useLiveQuery(() => db.exercises.toArray());
   
-  // Dynamic Habits
   const todayKey = new Date().toISOString().split('T')[0];
   const allHabits = useLiveQuery(() => db.habitDefinitions.toArray());
   const todayHabitsLog = useLiveQuery(() => db.dailyHabits.get(todayKey), [todayKey]);
@@ -20,24 +19,20 @@ export default function Progress() {
     return <div className="p-6 text-white/50">Loading metrics...</div>;
   }
 
-  // --- STAT CALCULATIONS ---
   const totalSessions = pastWorkouts.length;
   let totalVolume = 0;
   
-  // Muscle Balance Calculation (Total Sets per Group)
   const muscleBalance: Record<string, number> = {
     Chest: 0, Back: 0, Legs: 0, Shoulders: 0, Arms: 0, Core: 0
   };
 
   pastWorkouts.forEach(log => {
     log.exercises.forEach(exLog => {
-      // Add to volume
       exLog.sets.forEach(set => {
         const weightToUse = set.weight > 0 ? set.weight : 1; 
         totalVolume += (set.reps * weightToUse);
       });
 
-      // Add to muscle balance
       const exerciseDef = allExercises.find(e => e.id === exLog.exerciseId);
       if (exerciseDef && muscleBalance[exerciseDef.muscleGroup] !== undefined) {
         muscleBalance[exerciseDef.muscleGroup] += exLog.sets.length;
@@ -45,7 +40,6 @@ export default function Progress() {
     });
   });
 
-  // Format data for the Radar Chart
   const radarData = Object.keys(muscleBalance).map(key => ({
     muscle: key,
     sets: muscleBalance[key]
@@ -64,10 +58,31 @@ export default function Progress() {
     return max;
   };
 
+  // --- THEORETICAL 1RM (Brzycki Formula) ---
+  const calculateEstimated1RM = (weight: number, reps: number) => {
+    if (weight <= 0 || reps <= 0) return 0;
+    if (reps >= 37) return weight;
+    return Math.round(weight * (36 / (37 - reps)));
+  };
+
+  const getEstimatedMax1RM = (exerciseId: string) => {
+    let highest1RM = 0;
+    pastWorkouts.forEach(log => {
+      const exercise = log.exercises.find(ex => ex.exerciseId === exerciseId);
+      if (exercise) {
+        exercise.sets.forEach(set => {
+          const est = calculateEstimated1RM(set.weight, set.reps);
+          if (est > highest1RM) highest1RM = est;
+        });
+      }
+    });
+    return highest1RM;
+  };
+
   const keyLifts = [
-    { name: 'Machine Chest Press', max: getMaxWeight('machine-chest-press') },
-    { name: 'Linear Hack Press', max: getMaxWeight('linear-hack-press') },
-    { name: 'Lat Pulldown', max: getMaxWeight('lat-pulldown-machine') },
+    { name: 'Machine Chest Press', max: getMaxWeight('machine-chest-press'), est1RM: getEstimatedMax1RM('machine-chest-press') },
+    { name: 'Linear Hack Press', max: getMaxWeight('linear-hack-press'), est1RM: getEstimatedMax1RM('linear-hack-press') },
+    { name: 'Lat Pulldown', max: getMaxWeight('lat-pulldown-machine'), est1RM: getEstimatedMax1RM('lat-pulldown-machine') },
   ];
 
   const handleLogWeight = async () => {
@@ -112,7 +127,6 @@ export default function Progress() {
         <h1 className="text-3xl font-bold text-white tracking-tight">Progress</h1>
       </header>
 
-      {/* Top Stats */}
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5">
           <div className="flex items-center gap-2 mb-3"><Activity size={16} className="text-blue-400" /><h3 className="text-xs font-bold text-white/50 uppercase">Sessions</h3></div>
@@ -124,7 +138,6 @@ export default function Progress() {
         </div>
       </div>
 
-      {/* NEW: Muscle Balance Radar */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Target className="text-blue-400" size={20}/> Training Balance</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
         <p className="text-white/50 text-xs mb-2">Total working sets per muscle group.</p>
@@ -146,7 +159,6 @@ export default function Progress() {
         )}
       </div>
 
-      {/* Daily Protocol */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Flame className="text-amber-400" size={20}/> Daily Protocol</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
         {allHabits?.map(habit => {
@@ -161,7 +173,6 @@ export default function Progress() {
         {allHabits?.length === 0 && <p className="text-white/30 text-xs">Add items in Settings.</p>}
       </div>
 
-      {/* Mass Tracker */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Scale className="text-purple-400" size={20}/> Mass Tracker</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
         <div className="flex gap-3">
@@ -185,18 +196,22 @@ export default function Progress() {
         )}
       </div>
 
-      {/* Max Lifts */}
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="text-green-400" size={20}/> All-Time Max Lifts</h2>
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="text-green-400" size={20}/> All-Time Max Lifts & Estimated 1RM</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 space-y-5">
         {keyLifts.map((lift, i) => (
-          <div key={i} className="flex justify-between items-center group">
+          <div key={i} className="flex justify-between items-center group border-b border-white/5 pb-4 last:border-0 last:pb-0">
             <div className="flex items-center gap-3">
               <div className="bg-black/20 p-2 rounded-xl border border-white/5"><Dumbbell size={16} className="text-white/50" /></div>
-              <span className="text-white font-medium">{lift.name}</span>
+              <div>
+                <span className="text-white font-medium block">{lift.name}</span>
+                <span className="text-white/40 text-xs flex items-center gap-1 mt-0.5">
+                  <Award size={12} className="text-amber-400" /> Est. 1RM: <strong className="text-white/70">{lift.est1RM > 0 ? `${lift.est1RM} kg` : '--'}</strong>
+                </span>
+              </div>
             </div>
             <div className="text-right">
               <span className="text-xl font-bold text-white tabular-nums">{lift.max > 0 ? lift.max : '--'}</span>
-              <span className="text-white/50 text-xs ml-1">kg</span>
+              <span className="text-white/50 text-xs ml-1">kg max</span>
             </div>
           </div>
         ))}

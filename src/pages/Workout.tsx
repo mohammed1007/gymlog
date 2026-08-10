@@ -33,12 +33,10 @@ export default function Workout() {
   const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
   const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
   
-  // Dexie Queries
   const allExercises = useLiveQuery(() => db.exercises.toArray());
   const storedTemplates = useLiveQuery(() => db.routineTemplates.toArray());
   const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
 
-  // Dynamically resolve exercises for selected day
   const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
   const exercises: ExerciseDefinition[] = (allExercises && activeTemplate)
     ? activeTemplate.exerciseIds
@@ -120,7 +118,6 @@ export default function Workout() {
     
     if (!completedDays.includes(selectedDayKey)) {
       const updated = [...completedDays, selectedDayKey];
-      // Reset if all templates have been completed
       setCompletedDays(updated.length >= (storedTemplates?.length || 3) ? [] : updated);
     }
     setCurrentState('summary');
@@ -186,12 +183,6 @@ export default function Workout() {
               </div>
             );
           })}
-
-          {storedTemplates.length === 0 && (
-            <div className="p-6 text-center text-white/50 bg-white/5 border border-dashed border-white/10 rounded-3xl">
-              No routines found. Go to Settings to create one.
-            </div>
-          )}
         </div>
       </div>
     );
@@ -200,9 +191,7 @@ export default function Workout() {
   const renderGeneralWarmup = () => (
     <div className="flex-1 flex flex-col animate-in fade-in">
       <div className="flex items-center justify-between mb-8 mt-4">
-        <button onClick={() => setCurrentState('select-day')} className="text-sm text-blue-400 font-medium">
-          ← Back
-        </button>
+        <button onClick={() => setCurrentState('select-day')} className="text-sm text-blue-400 font-medium">← Back</button>
         <span className="text-xs font-bold uppercase tracking-widest text-white/50">{selectedDayKey}</span>
       </div>
       <h2 className="text-3xl font-bold text-white mb-8 tracking-tight">Warm-up</h2>
@@ -211,24 +200,15 @@ export default function Workout() {
           <button 
             key={item.id}
             onClick={() => toggleWarmup(item.id)}
-            className={`flex items-center gap-4 w-full text-left p-5 rounded-3xl border transition-all duration-300 ${
-              item.done 
-                ? 'bg-white/5 border-white/5' 
-                : 'bg-white/10 backdrop-blur-xl border-white/10 shadow-lg'
-            }`}
+            className={`flex items-center gap-4 w-full text-left p-5 rounded-3xl border transition-all duration-300 ${item.done ? 'bg-white/5 border-white/5' : 'bg-white/10 backdrop-blur-xl border-white/10 shadow-lg'}`}
           >
             {item.done ? <CheckSquare className="text-blue-400" size={24} /> : <Square className="text-white/40" size={24} />}
-            <span className={`${item.done ? 'line-through text-white/30' : 'text-white/90'} text-lg font-medium`}>
-              {item.text}
-            </span>
+            <span className={`${item.done ? 'line-through text-white/30' : 'text-white/90'} text-lg font-medium`}>{item.text}</span>
           </button>
         ))}
       </div>
       {warmup.every(w => w.done) && (
-        <button 
-          onClick={() => setCurrentState('working-sets')}
-          className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold text-lg py-5 rounded-[2rem] shadow-[0_0_40px_rgba(59,130,246,0.3)] mt-6 animate-in slide-in-from-bottom-4 transition-all"
-        >
+        <button onClick={() => setCurrentState('working-sets')} className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold text-lg py-5 rounded-[2rem] shadow-[0_0_40px_rgba(59,130,246,0.3)] mt-6 transition-all">
           Begin Workout
         </button>
       )}
@@ -252,13 +232,10 @@ export default function Workout() {
       }
     }
 
-    // NEW OVERLOAD ENGINE: Did they hit the top of the rep range last time?
     const shouldOverload = previousPerformance.some(set => set.reps >= currentExercise.maxReps);
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4">
-        
-        {/* Dynamic Exercise Navigator */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
@@ -272,41 +249,24 @@ export default function Workout() {
                   setCurrentSet(1);
                   setCurrentExerciseSets([]);
                 }}
-                className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                  isActive 
-                    ? 'bg-blue-500 border-blue-400 text-white shadow-lg' 
-                    : isDone 
-                      ? 'bg-white/5 border-white/5 text-white/30'
-                      : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'
-                }`}
+                className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${isActive ? 'bg-blue-500 border-blue-400 text-white shadow-lg' : isDone ? 'bg-white/5 border-white/5 text-white/30' : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'}`}
               >
-                <div className="flex items-center gap-1.5">
-                  {isDone && <Check size={12} />}
-                  {ex.name}
-                </div>
+                <div className="flex items-center gap-1.5">{isDone && <Check size={12} />}{ex.name}</div>
               </button>
             );
           })}
         </div>
 
-        {/* Header */}
         <div className="mb-6">
-          <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">
-            Exercise {currentExerciseIndex + 1} of {exercises.length}
-          </p>
-          <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">
-            {currentExercise.name}
-          </h2>
+          <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
+          <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
           <p className="text-white/50 font-medium mt-2 flex items-center justify-between">
             <span>Target: {currentExercise.defaultSets} sets × {currentExercise.minReps}–{currentExercise.maxReps} reps</span>
-            <button className="flex items-center gap-1 text-white/40 hover:text-white/80 bg-white/5 px-2 py-1 rounded-lg text-xs">
-              <Shuffle size={12} /> Swap
-            </button>
+            <button className="flex items-center gap-1 text-white/40 hover:text-white/80 bg-white/5 px-2 py-1 rounded-lg text-xs"><Shuffle size={12} /> Swap</button>
           </p>
         </div>
 
         <div className="flex-1 space-y-6">
-          {/* Target Panel */}
           {previousPerformance.length > 0 && (
             <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
@@ -314,15 +274,12 @@ export default function Workout() {
                   <Target size={16} className="text-blue-400" />
                   <h4 className="text-xs font-bold text-white/70 uppercase tracking-widest">Target to Beat</h4>
                 </div>
-                
-                {/* PROGRESSIVE OVERLOAD BADGE */}
                 {shouldOverload && (
                   <span className="flex items-center gap-1.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-amber-500/30 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                     <Zap size={12} /> Up the weight
                   </span>
                 )}
               </div>
-              
               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
                 {previousPerformance.map((set, idx) => (
                   <div key={idx} className={`flex-shrink-0 rounded-2xl px-5 py-3 border ${set.reps >= currentExercise.maxReps ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
@@ -336,7 +293,6 @@ export default function Workout() {
             </div>
           )}
 
-          {/* Today's Sets */}
           {currentExerciseSets.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3 ml-2">Today</h4>
@@ -349,59 +305,31 @@ export default function Workout() {
             </div>
           )}
 
-          {/* Input Area */}
           <div className="bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-3xl p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-white font-bold text-lg">Log Set {currentSet}</h3>
               {isBodyweight && (
-                <button 
-                  onClick={() => setIsWeighted(!isWeighted)}
-                  className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${
-                    isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/40'
-                  }`}
-                >
+                <button onClick={() => setIsWeighted(!isWeighted)} className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
                   {isWeighted ? 'Weighted Calisthenics' : '+ Add Weight'}
                 </button>
               )}
             </div>
-
             <div className={`grid ${(!isBodyweight || isWeighted) ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
               {(!isBodyweight || isWeighted) && (
                 <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
-                  <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">
-                    {isBodyweight ? 'Added Weight (kg)' : 'Weight (kg)'}
-                  </label>
-                  <input 
-                    type="number" 
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20"
-                    placeholder="0"
-                  />
+                  <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">{isBodyweight ? 'Added Weight (kg)' : 'Weight (kg)'}</label>
+                  <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" placeholder="0" />
                 </div>
               )}
-              
               <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
                 <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">Reps</label>
-                <input 
-                  type="number" 
-                  value={reps}
-                  onChange={(e) => setReps(e.target.value)}
-                  className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20"
-                  placeholder="0"
-                  autoFocus
-                />
+                <input type="number" value={reps} onChange={(e) => setReps(e.target.value)} className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" placeholder="0" autoFocus />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Action Button */}
-        <button 
-          disabled={!reps}
-          onClick={handleLogSet}
-          className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/30 text-white font-bold text-lg py-5 rounded-[2rem] flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)] disabled:shadow-none"
-        >
+        <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/30 text-white font-bold text-lg py-5 rounded-[2rem] flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
           <Check size={24} /> Complete Set {currentSet}
         </button>
       </div>
@@ -412,7 +340,6 @@ export default function Workout() {
     <div className="flex-1 flex flex-col animate-in fade-in">
       <h2 className="text-3xl font-bold text-white mb-2 mt-4 tracking-tight">Cool-down</h2>
       <p className="text-white/60 mb-8">Great job. Let's stretch the trained muscles.</p>
-      
       <div className="space-y-4 flex-1">
         <div className="bg-white/[0.08] backdrop-blur-xl border border-white/10 p-5 rounded-3xl flex justify-between items-center shadow-lg">
           <div>
@@ -421,11 +348,7 @@ export default function Workout() {
           </div>
         </div>
       </div>
-
-      <button 
-        onClick={handleFinishWorkout}
-        className="w-full bg-green-500 hover:bg-green-400 text-white font-bold text-lg py-5 rounded-[2rem] flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all"
-      >
+      <button onClick={handleFinishWorkout} className="w-full bg-green-500 hover:bg-green-400 text-white font-bold text-lg py-5 rounded-[2rem] flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all">
         Finish Workout <ArrowRight size={20} />
       </button>
     </div>
@@ -438,16 +361,16 @@ export default function Workout() {
       </div>
       <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">{selectedDayKey} Complete</h2>
       <p className="text-white/60 mb-10 text-lg">Session saved successfully.</p>
-      <button 
-        onClick={() => setCurrentState('select-day')}
-        className="bg-white/[0.1] backdrop-blur-xl border border-white/10 hover:bg-white/[0.15] text-white font-bold text-lg px-10 py-4 rounded-[2rem] transition-all"
-      >
+      <button onClick={() => setCurrentState('select-day')} className="bg-white/[0.1] backdrop-blur-xl border border-white/10 hover:bg-white/[0.15] text-white font-bold text-lg px-10 py-4 rounded-[2rem] transition-all">
         Done
       </button>
     </div>
   );
 
   if (!allExercises) return <div className="p-6 text-white/50">Loading workout plans...</div>;
+
+  const currentExercise = exercises[currentExerciseIndex];
+  const dynamicRestSeconds = currentExercise?.restSeconds || 90;
 
   return (
     <div className="p-6 min-h-full flex flex-col overflow-x-hidden">
@@ -456,7 +379,7 @@ export default function Workout() {
       {currentState === 'working-sets' && renderWorkingSets()}
       {currentState === 'rest' && (
         <RestTimer 
-          initialSeconds={120} 
+          initialSeconds={dynamicRestSeconds} 
           onSkip={() => {
             setCurrentSet(prev => prev + 1);
             setCurrentState('working-sets');

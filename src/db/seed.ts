@@ -5,47 +5,47 @@ export async function seedDatabase() {
   if (count === 0) {
     await db.exercises.bulkAdd([
       // --- CHEST ---
-      { id: 'machine-chest-press', name: 'Machine Chest Press', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'incline-chest-press-machine', name: 'Incline Chest Press', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'dips', name: 'Dips (Wide/Chest)', muscleGroup: 'Chest', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight' },
-      { id: 'push-ups', name: 'Push-Ups', muscleGroup: 'Chest', equipment: 'Bodyweight', defaultSets: 3, minReps: 10, maxReps: 25, progressionType: 'bodyweight' },
+      { id: 'machine-chest-press', name: 'Machine Chest Press', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 90 },
+      { id: 'incline-chest-press-machine', name: 'Incline Chest Press', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 90 },
+      { id: 'dips', name: 'Dips (Wide/Chest)', muscleGroup: 'Chest', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight', restSeconds: 90 },
+      { id: 'push-ups', name: 'Push-Ups', muscleGroup: 'Chest', equipment: 'Bodyweight', defaultSets: 3, minReps: 10, maxReps: 25, progressionType: 'bodyweight', restSeconds: 60 },
 
       // --- BACK ---
-      { id: 'pull-ups', name: 'Pull-Ups', muscleGroup: 'Back', equipment: 'Bodyweight', defaultSets: 3, minReps: 6, maxReps: 10, progressionType: 'bodyweight' },
-      { id: 'chin-ups', name: 'Chin-Ups', muscleGroup: 'Back', equipment: 'Bodyweight', defaultSets: 3, minReps: 6, maxReps: 10, progressionType: 'bodyweight' },
-      { id: 'lat-pulldown-machine', name: 'Lat Pulldown', muscleGroup: 'Back', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'chest-supported-row-machine', name: 'Chest-Supported Row', muscleGroup: 'Back', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'seated-row-machine', name: 'Seated Cable Row', muscleGroup: 'Back', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'inverted-rows', name: 'Inverted Rows (Smith Bar)', muscleGroup: 'Back', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight' },
+      { id: 'pull-ups', name: 'Pull-Ups', muscleGroup: 'Back', equipment: 'Bodyweight', defaultSets: 3, minReps: 6, maxReps: 10, progressionType: 'bodyweight', restSeconds: 90 },
+      { id: 'chin-ups', name: 'Chin-Ups', muscleGroup: 'Back', equipment: 'Bodyweight', defaultSets: 3, minReps: 6, maxReps: 10, progressionType: 'bodyweight', restSeconds: 90 },
+      { id: 'lat-pulldown-machine', name: 'Lat Pulldown', muscleGroup: 'Back', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 90 },
+      { id: 'chest-supported-row-machine', name: 'Chest-Supported Row', muscleGroup: 'Back', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 90 },
+      { id: 'seated-row-machine', name: 'Seated Cable Row', muscleGroup: 'Back', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 90 },
+      { id: 'inverted-rows', name: 'Inverted Rows (Smith Bar)', muscleGroup: 'Back', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight', restSeconds: 75 },
 
       // --- LEGS ---
-      { id: 'linear-hack-press', name: 'Linear Hack Press', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'hack-squat-machine', name: 'Hack Squat Machine', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 4, minReps: 8, maxReps: 10, progressionType: 'machine' },
-      { id: 'leg-press-machine', name: 'Leg Press', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'bulgarian-split-squats', name: 'Bulgarian Split Squats', muscleGroup: 'Legs', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 10, progressionType: 'bodyweight' },
-      { id: 'leg-extension-machine', name: 'Leg Extension', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine' },
-      { id: 'mts-leg-extension', name: 'MTS Leg Extension', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'machine' },
-      { id: 'seated-leg-curl', name: 'Seated Leg Curl', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'machine' },
-      { id: 'mts-kneeling-leg-curl', name: 'Kneeling Leg Curl', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'machine' },
-      { id: 'hip-abduction', name: 'Hip Abduction', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine' },
-      { id: 'calf-raise-machine', name: 'Calf Raise', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 20, progressionType: 'machine' },
+      { id: 'linear-hack-press', name: 'Linear Hack Press', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 120 },
+      { id: 'hack-squat-machine', name: 'Hack Squat Machine', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 4, minReps: 8, maxReps: 10, progressionType: 'machine', restSeconds: 120 },
+      { id: 'leg-press-machine', name: 'Leg Press', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 120 },
+      { id: 'bulgarian-split-squats', name: 'Bulgarian Split Squats', muscleGroup: 'Legs', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 10, progressionType: 'bodyweight', restSeconds: 90 },
+      { id: 'leg-extension-machine', name: 'Leg Extension', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine', restSeconds: 60 },
+      { id: 'mts-leg-extension', name: 'MTS Leg Extension', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'machine', restSeconds: 60 },
+      { id: 'seated-leg-curl', name: 'Seated Leg Curl', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'machine', restSeconds: 60 },
+      { id: 'mts-kneeling-leg-curl', name: 'Kneeling Leg Curl', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'machine', restSeconds: 60 },
+      { id: 'hip-abduction', name: 'Hip Abduction', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine', restSeconds: 60 },
+      { id: 'calf-raise-machine', name: 'Calf Raise', muscleGroup: 'Legs', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 20, progressionType: 'machine', restSeconds: 60 },
 
       // --- SHOULDERS ---
-      { id: 'shoulder-press-machine', name: 'Shoulder Press', muscleGroup: 'Shoulders', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine' },
-      { id: 'lateral-raise-machine', name: 'Lateral Raise Machine', muscleGroup: 'Shoulders', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine' },
-      { id: 'reverse-pec-deck', name: 'Reverse Pec Deck', muscleGroup: 'Shoulders', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine' },
-      { id: 'pike-push-ups', name: 'Pike Push-Ups', muscleGroup: 'Shoulders', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight' },
+      { id: 'shoulder-press-machine', name: 'Shoulder Press', muscleGroup: 'Shoulders', equipment: 'Machine', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'machine', restSeconds: 90 },
+      { id: 'lateral-raise-machine', name: 'Lateral Raise Machine', muscleGroup: 'Shoulders', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine', restSeconds: 60 },
+      { id: 'reverse-pec-deck', name: 'Reverse Pec Deck', muscleGroup: 'Shoulders', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine', restSeconds: 60 },
+      { id: 'pike-push-ups', name: 'Pike Push-Ups', muscleGroup: 'Shoulders', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight', restSeconds: 75 },
 
-      // --- ARMS (BICEPS, TRICEPS, FOREARMS) ---
-      { id: 'machine-preacher-curl', name: 'Preacher Curl Machine', muscleGroup: 'Arms', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 12, progressionType: 'machine' },
-      { id: 'triceps-press-machine', name: 'Triceps Press', muscleGroup: 'Arms', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 12, progressionType: 'machine' },
-      { id: 'bench-dips', name: 'Bench Dips', muscleGroup: 'Arms', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight' },
-      { id: 'dead-hangs', name: 'Dead Hangs (Grip)', muscleGroup: 'Arms', equipment: 'Bodyweight', defaultSets: 3, minReps: 45, maxReps: 60, progressionType: 'bodyweight' }, // Reps acting as seconds here
+      // --- ARMS ---
+      { id: 'machine-preacher-curl', name: 'Preacher Curl Machine', muscleGroup: 'Arms', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 12, progressionType: 'machine', restSeconds: 60 },
+      { id: 'triceps-press-machine', name: 'Triceps Press', muscleGroup: 'Arms', equipment: 'Machine', defaultSets: 3, minReps: 10, maxReps: 12, progressionType: 'machine', restSeconds: 60 },
+      { id: 'bench-dips', name: 'Bench Dips', muscleGroup: 'Arms', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight', restSeconds: 60 },
+      { id: 'dead-hangs', name: 'Dead Hangs (Grip)', muscleGroup: 'Arms', equipment: 'Bodyweight', defaultSets: 3, minReps: 45, maxReps: 60, progressionType: 'bodyweight', restSeconds: 45 },
 
       // --- CORE ---
-      { id: 'hanging-leg-raises', name: 'Hanging Leg Raises', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'bodyweight' },
-      { id: 'front-planks', name: 'Front Planks', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 45, maxReps: 60, progressionType: 'bodyweight' },
-      { id: 'side-planks', name: 'Side Planks', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 30, maxReps: 45, progressionType: 'bodyweight' }
+      { id: 'hanging-leg-raises', name: 'Hanging Leg Raises', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'bodyweight', restSeconds: 60 },
+      { id: 'front-planks', name: 'Front Planks', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 45, maxReps: 60, progressionType: 'bodyweight', restSeconds: 45 },
+      { id: 'side-planks', name: 'Side Planks', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 30, maxReps: 45, progressionType: 'bodyweight', restSeconds: 45 }
     ]);
   }
 
