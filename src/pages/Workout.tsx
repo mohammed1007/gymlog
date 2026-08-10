@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle } from 'lucide-react';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Shuffle, Zap } from 'lucide-react';
 import RestTimer from '../components/RestTimer';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
@@ -252,6 +252,9 @@ export default function Workout() {
       }
     }
 
+    // NEW OVERLOAD ENGINE: Did they hit the top of the rep range last time?
+    const shouldOverload = previousPerformance.some(set => set.reps >= currentExercise.maxReps);
+
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4">
         
@@ -305,16 +308,26 @@ export default function Workout() {
         <div className="flex-1 space-y-6">
           {/* Target Panel */}
           {previousPerformance.length > 0 && (
-            <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg">
-              <div className="flex items-center gap-2 mb-4">
-                <Target size={16} className="text-blue-400" />
-                <h4 className="text-xs font-bold text-white/70 uppercase tracking-widest">Target to Beat</h4>
+            <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Target size={16} className="text-blue-400" />
+                  <h4 className="text-xs font-bold text-white/70 uppercase tracking-widest">Target to Beat</h4>
+                </div>
+                
+                {/* PROGRESSIVE OVERLOAD BADGE */}
+                {shouldOverload && (
+                  <span className="flex items-center gap-1.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-amber-500/30 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                    <Zap size={12} /> Up the weight
+                  </span>
+                )}
               </div>
+              
               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
                 {previousPerformance.map((set, idx) => (
-                  <div key={idx} className="flex-shrink-0 bg-black/20 rounded-2xl px-5 py-3 border border-white/5">
+                  <div key={idx} className={`flex-shrink-0 rounded-2xl px-5 py-3 border ${set.reps >= currentExercise.maxReps ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
                     <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Set {idx + 1}</div>
-                    <div className="text-white font-bold text-lg">
+                    <div className={`font-bold text-lg ${set.reps >= currentExercise.maxReps ? 'text-amber-400' : 'text-white'}`}>
                       {set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps}
                     </div>
                   </div>
@@ -437,7 +450,8 @@ export default function Workout() {
   if (!allExercises) return <div className="p-6 text-white/50">Loading workout plans...</div>;
 
   return (
-<div className="p-6 min-h-full flex flex-col overflow-x-hidden">      {currentState === 'select-day' && renderDaySelection()}
+    <div className="p-6 min-h-full flex flex-col overflow-x-hidden">
+      {currentState === 'select-day' && renderDaySelection()}
       {currentState === 'general-warmup' && renderGeneralWarmup()}
       {currentState === 'working-sets' && renderWorkingSets()}
       {currentState === 'rest' && (
