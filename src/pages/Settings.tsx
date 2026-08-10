@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Download, Upload, Server, Calendar, List, ChevronRight, ArrowLeft, Plus, Trash2, X } from 'lucide-react';
 import { db } from '../db/db';
+import MuscleMap from '../components/MuscleMap';
 
 type SettingsView = 'main' | 'routines' | 'habits' | 'data';
 
@@ -206,20 +207,44 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Exercise Picker Modal */}
+      {/* RE-DESIGNED EXERCISE PICKER OVERLAY */}
       {showExercisePicker && editingDay && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 overflow-y-auto pb-36">
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col pb-safe">
           <div className="flex justify-between items-center mb-6 mt-4">
             <h3 className="text-xl font-bold text-white">Select Exercise</h3>
             <button onClick={() => setShowExercisePicker(false)} className="p-3 bg-white/10 rounded-full"><X size={20} className="text-white" /></button>
           </div>
-          <div className="space-y-2">
+          
+          <div className="flex-1 overflow-y-auto space-y-3 pr-2 hide-scrollbar pb-36">
             {exercises?.map(ex => {
               const isAdded = routines?.find(r => r.dayKey === editingDay)?.exerciseIds.includes(ex.id);
               return (
-                <button key={ex.id} disabled={isAdded} onClick={() => handleAddExercise(editingDay, ex.id)} className={`w-full flex justify-between items-center p-4 rounded-2xl border ${isAdded ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10'}`}>
-                  <div className="text-left"><p className="text-white font-bold">{ex.name}</p><p className="text-white/40 text-xs">{ex.muscleGroup}</p></div>
-                  {!isAdded && <Plus className="text-blue-400" size={18} />}
+                <button 
+                  key={ex.id} 
+                  disabled={isAdded} 
+                  onClick={() => handleAddExercise(editingDay, ex.id)} 
+                  className={`w-full flex justify-between items-center p-3 rounded-2xl border transition-all ${
+                    isAdded ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10 hover:bg-white/20 hover:scale-[1.02]'
+                  }`}
+                >
+                  <div className="flex items-center gap-4 text-left">
+                    {/* Glowing Vector Injected Here */}
+                    <div className="bg-black/40 rounded-xl p-1 border border-white/5">
+                      <MuscleMap muscleGroup={ex.muscleGroup} />
+                    </div>
+                    
+                    <div>
+                      <p className="text-white font-bold text-lg">{ex.name}</p>
+                      <p className="text-blue-400/80 font-medium text-xs tracking-widest uppercase">{ex.muscleGroup}</p>
+                      <p className="text-white/40 text-[10px] mt-0.5">{ex.equipment}</p>
+                    </div>
+                  </div>
+                  
+                  {!isAdded && (
+                    <div className="p-2 bg-blue-500/20 rounded-full mr-2">
+                      <Plus className="text-blue-400" size={18} />
+                    </div>
+                  )}
                 </button>
               );
             })}

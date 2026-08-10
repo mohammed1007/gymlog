@@ -86,8 +86,8 @@ export default function Progress() {
   };
 
   return (
-    // FIX: pb-36 properly clears the bottom navigation bar so nothing is cut off
-    <div className="p-6 pb-36 h-full flex flex-col animate-in fade-in">
+    // FIX: Changed from 'h-full pb-36' to 'min-h-full'. App.tsx handles the bottom padding automatically.
+    <div className="p-6 min-h-full flex flex-col animate-in fade-in">
       <header className="mb-8 mt-4">
         <h1 className="text-3xl font-bold text-white tracking-tight">Progress</h1>
       </header>

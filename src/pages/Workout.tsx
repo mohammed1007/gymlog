@@ -437,8 +437,7 @@ export default function Workout() {
   if (!allExercises) return <div className="p-6 text-white/50">Loading workout plans...</div>;
 
   return (
-    <div className="p-6 pb-36 h-full flex flex-col overflow-x-hidden">
-      {currentState === 'select-day' && renderDaySelection()}
+<div className="p-6 min-h-full flex flex-col overflow-x-hidden">      {currentState === 'select-day' && renderDaySelection()}
       {currentState === 'general-warmup' && renderGeneralWarmup()}
       {currentState === 'working-sets' && renderWorkingSets()}
       {currentState === 'rest' && (
