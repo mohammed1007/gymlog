@@ -13,6 +13,7 @@ export default function Workout() {
   const [currentSet, setCurrentSet] = useState(1);
   const [isWeighted, setIsWeighted] = useState(false);
   
+  // Manual state preserved with localStorage
   const [completedDays, setCompletedDays] = useState<string[]>(() => {
     const saved = localStorage.getItem('gym_completed_days');
     return saved ? JSON.parse(saved) : [];
@@ -33,10 +34,34 @@ export default function Workout() {
   const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
   const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
   
+  // Dexie Queries
   const allExercises = useLiveQuery(() => db.exercises.toArray());
   const storedTemplates = useLiveQuery(() => db.routineTemplates.toArray());
   const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
 
+  // Automatically sync imported or finished workouts for today into completedDays
+  useEffect(() => {
+    if (!pastWorkouts || !storedTemplates) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayLogs = pastWorkouts.filter(log => log.date.startsWith(todayStr));
+    
+    const loggedDayKeys = todayLogs.map(log => {
+      const match = storedTemplates.find(t => log.templateName.includes(t.dayKey));
+      return match ? match.dayKey : null;
+    }).filter((key): key is string => key !== null);
+
+    if (loggedDayKeys.length > 0) {
+      setCompletedDays(prev => {
+        const combined = Array.from(new Set([...prev, ...loggedDayKeys]));
+        if (combined.length !== prev.length) {
+          return combined;
+        }
+        return prev;
+      });
+    }
+  }, [pastWorkouts, storedTemplates]);
+
+  // Dynamically resolve exercises for selected day
   const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
   const exercises: ExerciseDefinition[] = (allExercises && activeTemplate)
     ? activeTemplate.exerciseIds
@@ -118,7 +143,7 @@ export default function Workout() {
     
     if (!completedDays.includes(selectedDayKey)) {
       const updated = [...completedDays, selectedDayKey];
-      setCompletedDays(updated.length >= (storedTemplates?.length || 3) ? [] : updated);
+      setCompletedDays(updated);
     }
     setCurrentState('summary');
   };
