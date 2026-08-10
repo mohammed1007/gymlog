@@ -56,4 +56,12 @@ export async function seedDatabase() {
       }
     ]);
   }
+  const habitCount = await db.habitDefinitions.count();
+  if (habitCount === 0) {
+    await db.habitDefinitions.bulkAdd([
+      { id: 'creatine', label: 'Creatine Monohydrate (5g)' },
+      { id: 'vitamins', label: 'Daily Vitamins' },
+      { id: 'magnesium', label: 'Magnesium' }
+    ]);
+  }
 }

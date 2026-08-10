@@ -25,10 +25,16 @@ export interface BodyweightLog {
   weight: number;
 }
 
+// NEW: Dynamic Habit Definitions
+export interface HabitDefinition {
+  id: string;
+  label: string;
+}
+
+// UPDATED: Now stores an array of completed habit IDs instead of hardcoded booleans
 export interface DailyHabitsLog {
   date: string; 
-  creatine: boolean;
-  surplusMeals: boolean;
+  completedIds: string[];
 }
 
 export interface ExerciseDefinition {
@@ -43,7 +49,7 @@ export interface ExerciseDefinition {
 }
 
 export interface RoutineTemplate {
-  dayKey: string; // 'Day A' | 'Day B' | 'Day C'
+  dayKey: string; 
   exerciseIds: string[];
 }
 
@@ -53,15 +59,18 @@ export class GymDatabase extends Dexie {
   dailyHabits!: Table<DailyHabitsLog, string>;
   exercises!: Table<ExerciseDefinition, string>;
   routineTemplates!: Table<RoutineTemplate, string>;
+  habitDefinitions!: Table<HabitDefinition, string>; // New Table
 
   constructor() {
     super('GymLogDatabase');
-    this.version(3).stores({
+    // Bumped to version 4 for the new habits table
+    this.version(4).stores({
       workoutLogs: '++id, date, templateName',
       bodyweightLogs: '++id, date',
       dailyHabits: 'date',
       exercises: 'id',
-      routineTemplates: 'dayKey'
+      routineTemplates: 'dayKey',
+      habitDefinitions: 'id'
     });
   }
 }
