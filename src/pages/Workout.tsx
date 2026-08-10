@@ -30,6 +30,9 @@ export default function Workout() {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   
+  // State for weighted calisthenics toggle (declared at top level)
+  const [isWeighted, setIsWeighted] = useState(false);
+  
   const [completedDays, setCompletedDays] = useState<string[]>(() => {
     const saved = localStorage.getItem('gym_completed_days');
     return saved ? JSON.parse(saved) : [];
@@ -38,6 +41,11 @@ export default function Workout() {
   useEffect(() => {
     localStorage.setItem('gym_completed_days', JSON.stringify(completedDays));
   }, [completedDays]);
+
+  // Reset weighted toggle when changing exercises
+  useEffect(() => {
+    setIsWeighted(false);
+  }, [currentExerciseIndex]);
   
   const [reps, setReps] = useState<string>('');
   const [weight, setWeight] = useState<string>(''); 
@@ -95,7 +103,6 @@ export default function Workout() {
     if (currentSet < (currentExercise.defaultSets || 3)) {
       setCurrentState('rest');
     } else {
-      // Commit completed exercise
       const updatedLog = [...workoutLog, {
         exerciseId: currentExercise.id,
         name: currentExercise.name,
@@ -105,7 +112,6 @@ export default function Workout() {
       setCurrentExerciseSets([]);
       setCurrentSet(1);
       
-      // Find the next incomplete exercise
       const nextIncompleteIndex = exercises.findIndex(
         ex => !updatedLog.some(log => log.exerciseId === ex.id)
       );
@@ -252,7 +258,7 @@ export default function Workout() {
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4">
         
-        {/* Dynamic Exercise Navigator (Skip / Swap Machine) */}
+        {/* Dynamic Exercise Navigator */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
@@ -312,7 +318,7 @@ export default function Workout() {
                   <div key={idx} className="flex-shrink-0 bg-black/20 rounded-2xl px-5 py-3 border border-white/5">
                     <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Set {idx + 1}</div>
                     <div className="text-white font-bold text-lg">
-                      {isBodyweight ? '' : `${set.weight}kg × `}{set.reps}
+                      {set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps}
                     </div>
                   </div>
                 ))}
@@ -327,7 +333,7 @@ export default function Workout() {
               {currentExerciseSets.map((set, idx) => (
                 <div key={idx} className="flex justify-between items-center bg-white/5 rounded-2xl px-5 py-3">
                   <span className="text-white/50 text-sm font-medium">Set {idx + 1}</span>
-                  <span className="text-white font-bold">{isBodyweight ? '' : `${set.weight}kg × `}{set.reps} reps</span>
+                  <span className="text-white font-bold">{set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps} reps</span>
                 </div>
               ))}
             </div>
@@ -335,11 +341,26 @@ export default function Workout() {
 
           {/* Input Area */}
           <div className="bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-3xl p-5">
-            <h3 className="text-white font-bold text-lg mb-4">Log Set {currentSet}</h3>
-            <div className={`grid ${isBodyweight ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
-              {!isBodyweight && (
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-white font-bold text-lg">Log Set {currentSet}</h3>
+              {isBodyweight && (
+                <button 
+                  onClick={() => setIsWeighted(!isWeighted)}
+                  className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${
+                    isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/40'
+                  }`}
+                >
+                  {isWeighted ? 'Weighted Calisthenics' : '+ Add Weight'}
+                </button>
+              )}
+            </div>
+
+            <div className={`grid ${(!isBodyweight || isWeighted) ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+              {(!isBodyweight || isWeighted) && (
                 <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
-                  <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">Weight (kg)</label>
+                  <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">
+                    {isBodyweight ? 'Added Weight (kg)' : 'Weight (kg)'}
+                  </label>
                   <input 
                     type="number" 
                     value={weight}
