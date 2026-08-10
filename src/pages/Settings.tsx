@@ -75,6 +75,14 @@ export default function Settings() {
     setNewDayName('');
   };
 
+  const handleDeleteDay = async (dayKey: string) => {
+    if (confirm(`Are you sure you want to delete ${dayKey} entirely?`)) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([50, 100, 50]);
+      await db.routineTemplates.delete(dayKey);
+      setEditingDay(null);
+    }
+  };
+
   const handleRemoveExercise = async (dayKey: string, exerciseId: string) => {
     const template = routines?.find(r => r.dayKey === dayKey);
     if (!template) return;
@@ -99,7 +107,7 @@ export default function Settings() {
   // --- RENDERERS ---
   if (view === 'main') {
     return (
-      <div className="p-6 pb-36 h-full flex flex-col animate-in fade-in">
+      <div className="p-6 pb-36 min-h-full flex flex-col animate-in fade-in">
         <header className="mb-8 mt-4">
           <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
         </header>
@@ -134,7 +142,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 pb-36 h-full flex flex-col animate-in slide-in-from-right-4">
+    <div className="p-6 pb-36 min-h-full flex flex-col animate-in slide-in-from-right-4">
       <div className="flex items-center gap-3 mb-8 mt-4">
         <button onClick={() => setView('main')} className="p-2 bg-white/10 rounded-full text-white/70 hover:text-white"><ArrowLeft size={20} /></button>
         <h2 className="text-2xl font-bold text-white tracking-tight capitalize">{view}</h2>
@@ -162,7 +170,15 @@ export default function Settings() {
             <>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-bold text-xl">{editingDay}</h3>
-                <button onClick={() => setEditingDay(null)} className="text-xs text-white/50">Done</button>
+                <div className="flex gap-3 items-center">
+                  <button 
+                    onClick={() => handleDeleteDay(editingDay)} 
+                    className="p-2 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <button onClick={() => setEditingDay(null)} className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all">Done</button>
+                </div>
               </div>
               <div className="space-y-2">
                 {routines?.find(r => r.dayKey === editingDay)?.exerciseIds.map(id => {
@@ -207,7 +223,7 @@ export default function Settings() {
         </div>
       )}
 
-      {/* RE-DESIGNED EXERCISE PICKER OVERLAY */}
+      {/* EXERCISE PICKER OVERLAY */}
       {showExercisePicker && editingDay && (
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col pb-safe">
           <div className="flex justify-between items-center mb-6 mt-4">
@@ -228,7 +244,6 @@ export default function Settings() {
                   }`}
                 >
                   <div className="flex items-center gap-4 text-left">
-                    {/* Glowing Vector Injected Here */}
                     <div className="bg-black/40 rounded-xl p-1 border border-white/5">
                       <MuscleMap muscleGroup={ex.muscleGroup} />
                     </div>
