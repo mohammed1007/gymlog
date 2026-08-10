@@ -48,26 +48,50 @@ export async function seedDatabase() {
     await db.routineTemplates.bulkAdd([
       {
         dayKey: 'Day A',
-        exerciseIds: [
-          'machine-chest-press', 'pull-ups', 'chest-supported-row-machine', 'linear-hack-press',
-          'mts-leg-extension', 'mts-kneeling-leg-curl', 'lateral-raise-machine', 'machine-preacher-curl',
-          'triceps-press-machine', 'hanging-leg-raises'
+        exercises: [
+          { exerciseId: 'machine-chest-press', sets: 3 },
+          { exerciseId: 'pull-ups', sets: 3 },
+          { exerciseId: 'chest-supported-row-machine', sets: 3 },
+          { exerciseId: 'linear-hack-press', sets: 3 },
+          { exerciseId: 'mts-leg-extension', sets: 3 },
+          { exerciseId: 'mts-kneeling-leg-curl', sets: 3 },
+          { exerciseId: 'lateral-raise-machine', sets: 3 },
+          { exerciseId: 'machine-preacher-curl', sets: 3 },
+          { exerciseId: 'triceps-press-machine', sets: 3 },
+          { exerciseId: 'hanging-leg-raises', sets: 3 }
         ]
       },
       {
         dayKey: 'Day B',
-        exerciseIds: [
-          'incline-chest-press-machine', 'lat-pulldown-machine', 'seated-row-machine', 'leg-press-machine',
-          'leg-extension-machine', 'mts-kneeling-leg-curl', 'hip-abduction', 'shoulder-press-machine',
-          'reverse-pec-deck', 'machine-preacher-curl', 'triceps-press-machine'
+        exercises: [
+          { exerciseId: 'incline-chest-press-machine', sets: 3 },
+          { exerciseId: 'lat-pulldown-machine', sets: 3 },
+          { exerciseId: 'seated-row-machine', sets: 3 },
+          { exerciseId: 'leg-press-machine', sets: 3 },
+          { exerciseId: 'leg-extension-machine', sets: 3 },
+          { exerciseId: 'mts-kneeling-leg-curl', sets: 3 },
+          { exerciseId: 'hip-abduction', sets: 3 },
+          { exerciseId: 'shoulder-press-machine', sets: 3 },
+          { exerciseId: 'reverse-pec-deck', sets: 3 },
+          { exerciseId: 'machine-preacher-curl', sets: 3 },
+          { exerciseId: 'triceps-press-machine', sets: 3 }
         ]
       },
       {
         dayKey: 'Day C',
-        exerciseIds: [
-          'machine-chest-press', 'dips', 'pull-ups', 'chest-supported-row-machine', 'linear-hack-press',
-          'leg-extension-machine', 'mts-kneeling-leg-curl', 'hip-abduction', 'calf-raise-machine',
-          'lateral-raise-machine', 'reverse-pec-deck', 'hanging-leg-raises'
+        exercises: [
+          { exerciseId: 'machine-chest-press', sets: 3 },
+          { exerciseId: 'dips', sets: 3 },
+          { exerciseId: 'pull-ups', sets: 3 },
+          { exerciseId: 'chest-supported-row-machine', sets: 3 },
+          { exerciseId: 'linear-hack-press', sets: 3 },
+          { exerciseId: 'leg-extension-machine', sets: 3 },
+          { exerciseId: 'mts-kneeling-leg-curl', sets: 3 },
+          { exerciseId: 'hip-abduction', sets: 3 },
+          { exerciseId: 'calf-raise-machine', sets: 3 },
+          { exerciseId: 'lateral-raise-machine', sets: 3 },
+          { exerciseId: 'reverse-pec-deck', sets: 3 },
+          { exerciseId: 'hanging-leg-raises', sets: 3 }
         ]
       }
     ]);

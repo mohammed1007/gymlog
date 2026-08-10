@@ -45,12 +45,17 @@ export interface ExerciseDefinition {
   minReps: number;
   maxReps: number;
   restSeconds?: number;
-  notes?: string; // <-- NEW: Posture & Setup Reminders
+  notes?: string;
+}
+
+export interface RoutineExerciseItem {
+  exerciseId: string;
+  sets: number;
 }
 
 export interface RoutineTemplate {
   dayKey: string; 
-  exerciseIds: string[];
+  exercises: RoutineExerciseItem[]; // Updated to store custom sets per exercise
 }
 
 export class GymDatabase extends Dexie {
@@ -63,8 +68,8 @@ export class GymDatabase extends Dexie {
 
   constructor() {
     super('GymLogDatabase');
-    // Bumped to version 5 for exercise notes
-    this.version(5).stores({
+    // Bumped to version 6 for routine exercise sets structure
+    this.version(6).stores({
       workoutLogs: '++id, date, templateName',
       bodyweightLogs: '++id, date',
       dailyHabits: 'date',

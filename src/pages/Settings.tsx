@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Download, Upload, Server, Calendar, List, ChevronRight, ArrowLeft, Plus, Trash2, X } from 'lucide-react';
+import { Download, Upload, Server, Calendar, List, ChevronRight, ArrowLeft, Plus, Trash2, X, Minus } from 'lucide-react';
 import { db } from '../db/db';
 import MuscleMap from '../components/MuscleMap';
 
@@ -10,18 +10,15 @@ export default function Settings() {
   const [view, setView] = useState<SettingsView>('main');
   const [status, setStatus] = useState<string | null>(null);
 
-  // Data
   const routines = useLiveQuery(() => db.routineTemplates.toArray());
   const exercises = useLiveQuery(() => db.exercises.toArray());
   const habits = useLiveQuery(() => db.habitDefinitions.toArray());
 
-  // Local State for editors
   const [newDayName, setNewDayName] = useState('');
   const [newHabitName, setNewHabitName] = useState('');
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
 
-  // --- DATA SYNC ---
   const handleExport = async () => {
     try {
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
@@ -60,7 +57,6 @@ export default function Settings() {
     reader.readAsText(file);
   };
 
-  // --- HABIT EDITOR ---
   const handleAddHabit = async () => {
     if (!newHabitName) return;
     const id = newHabitName.toLowerCase().replace(/\s+/g, '-');
@@ -68,10 +64,9 @@ export default function Settings() {
     setNewHabitName('');
   };
 
-  // --- ROUTINE EDITOR ---
   const handleAddDay = async () => {
     if (!newDayName) return;
-    await db.routineTemplates.add({ dayKey: newDayName, exerciseIds: [] });
+    await db.routineTemplates.add({ dayKey: newDayName, exercises: [] });
     setNewDayName('');
   };
 
@@ -88,23 +83,35 @@ export default function Settings() {
     if (!template) return;
     await db.routineTemplates.put({
       dayKey,
-      exerciseIds: template.exerciseIds.filter(id => id !== exerciseId)
+      exercises: template.exercises.filter(item => item.exerciseId !== exerciseId)
+    });
+  };
+
+  const handleUpdateSets = async (dayKey: string, exerciseId: string, newSets: number) => {
+    if (newSets < 1) return;
+    const template = routines?.find(r => r.dayKey === dayKey);
+    if (!template) return;
+    await db.routineTemplates.put({
+      dayKey,
+      exercises: template.exercises.map(item => item.exerciseId === exerciseId ? { ...item, sets: newSets } : item)
     });
   };
 
   const handleAddExercise = async (dayKey: string, exerciseId: string) => {
     const template = routines?.find(r => r.dayKey === dayKey);
     if (!template) return;
-    if (!template.exerciseIds.includes(exerciseId)) {
+    const exerciseDef = exercises?.find(e => e.id === exerciseId);
+    const defaultSets = exerciseDef?.defaultSets || 3;
+
+    if (!template.exercises.some(item => item.exerciseId === exerciseId)) {
       await db.routineTemplates.put({
         dayKey,
-        exerciseIds: [...template.exerciseIds, exerciseId]
+        exercises: [...template.exercises, { exerciseId, sets: defaultSets }]
       });
     }
     setShowExercisePicker(false);
   };
 
-  // --- RENDERERS ---
   if (view === 'main') {
     return (
       <div className="p-6 pb-36 min-h-full flex flex-col animate-in fade-in">
@@ -116,7 +123,7 @@ export default function Settings() {
           <button onClick={() => setView('routines')} className="w-full bg-white/[0.06] backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95">
             <div className="flex items-center gap-4">
               <div className="bg-black/20 p-3 rounded-xl border border-white/5"><Calendar size={20} className="text-blue-400" /></div>
-              <div className="text-left"><h3 className="text-white font-bold">Manage Routines</h3><p className="text-white/50 text-xs">Add days, swap exercises.</p></div>
+              <div className="text-left"><h3 className="text-white font-bold">Manage Routines</h3><p className="text-white/50 text-xs">Add days, swap exercises & sets.</p></div>
             </div>
             <ChevronRight className="text-white/30" />
           </button>
@@ -156,7 +163,7 @@ export default function Settings() {
                 <div key={routine.dayKey} className="bg-white/5 border border-white/10 p-5 rounded-3xl flex justify-between items-center">
                   <div>
                     <h4 className="text-white font-bold">{routine.dayKey}</h4>
-                    <p className="text-white/50 text-xs">{routine.exerciseIds.length} exercises</p>
+                    <p className="text-white/50 text-xs">{routine.exercises.length} exercises</p>
                   </div>
                   <button onClick={() => setEditingDay(routine.dayKey)} className="px-4 py-2 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-xl">Edit</button>
                 </div>
@@ -171,22 +178,27 @@ export default function Settings() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-bold text-xl">{editingDay}</h3>
                 <div className="flex gap-3 items-center">
-                  <button 
-                    onClick={() => handleDeleteDay(editingDay)} 
-                    className="p-2 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <button onClick={() => handleDeleteDay(editingDay)} className="p-2 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"><Trash2 size={18} /></button>
                   <button onClick={() => setEditingDay(null)} className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all">Done</button>
                 </div>
               </div>
-              <div className="space-y-2">
-                {routines?.find(r => r.dayKey === editingDay)?.exerciseIds.map(id => {
-                  const ex = exercises?.find(e => e.id === id);
+              <div className="space-y-3">
+                {routines?.find(r => r.dayKey === editingDay)?.exercises.map(item => {
+                  const ex = exercises?.find(e => e.id === item.exerciseId);
                   return (
-                    <div key={id} className="flex justify-between items-center bg-black/20 border border-white/5 p-4 rounded-2xl">
-                      <span className="text-white font-medium">{ex?.name || id}</span>
-                      <button onClick={() => handleRemoveExercise(editingDay, id)} className="text-red-400 p-2"><Trash2 size={16} /></button>
+                    <div key={item.exerciseId} className="flex justify-between items-center bg-black/20 border border-white/5 p-4 rounded-2xl">
+                      <div>
+                        <span className="text-white font-medium block">{ex?.name || item.exerciseId}</span>
+                        <span className="text-white/40 text-xs">{item.sets} sets planned</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+                          <button onClick={() => handleUpdateSets(editingDay, item.exerciseId, item.sets - 1)} className="p-1.5 text-white/60 hover:text-white"><Minus size={14} /></button>
+                          <span className="text-white font-bold text-xs px-2">{item.sets}</span>
+                          <button onClick={() => handleUpdateSets(editingDay, item.exerciseId, item.sets + 1)} className="p-1.5 text-white/60 hover:text-white"><Plus size={14} /></button>
+                        </div>
+                        <button onClick={() => handleRemoveExercise(editingDay, item.exerciseId)} className="text-red-400 p-2"><Trash2 size={16} /></button>
+                      </div>
                     </div>
                   );
                 })}
@@ -223,7 +235,6 @@ export default function Settings() {
         </div>
       )}
 
-      {/* EXERCISE PICKER OVERLAY */}
       {showExercisePicker && editingDay && (
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col pb-safe">
           <div className="flex justify-between items-center mb-6 mt-4">
@@ -233,7 +244,8 @@ export default function Settings() {
           
           <div className="flex-1 overflow-y-auto space-y-3 pr-2 hide-scrollbar pb-36">
             {exercises?.map(ex => {
-              const isAdded = routines?.find(r => r.dayKey === editingDay)?.exerciseIds.includes(ex.id);
+              const routine = routines?.find(r => r.dayKey === editingDay);
+              const isAdded = routine?.exercises.some(item => item.exerciseId === ex.id);
               return (
                 <button 
                   key={ex.id} 

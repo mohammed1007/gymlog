@@ -58,10 +58,16 @@ export default function Workout() {
   }, [pastWorkouts, storedTemplates]);
 
   const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
-  const exercises: ExerciseDefinition[] = (allExercises && activeTemplate)
-    ? activeTemplate.exerciseIds
-        .map(id => allExercises.find(e => e.id === id))
-        .filter((e): e is ExerciseDefinition => e !== undefined)
+  
+  // Resolve exercises along with their custom planned set counts
+  const routineItems = activeTemplate?.exercises || [];
+  const exercises: (ExerciseDefinition & { plannedSets: number })[] = (allExercises && activeTemplate)
+    ? routineItems
+        .map(item => {
+          const exDef = allExercises.find(e => e.id === item.exerciseId);
+          return exDef ? { ...exDef, plannedSets: item.sets } : null;
+        })
+        .filter((e): e is (ExerciseDefinition & { plannedSets: number }) => e !== null)
     : [];
 
   const [warmup, setWarmup] = useState([
@@ -101,7 +107,7 @@ export default function Workout() {
     setCurrentExerciseSets(updatedSets);
     setReps('');
 
-    if (currentSet < (currentExercise.defaultSets || 3)) {
+    if (currentSet < currentExercise.plannedSets) {
       setCurrentState('rest');
     } else {
       const updatedLog = [...workoutLog, {
@@ -183,7 +189,7 @@ export default function Workout() {
           {storedTemplates.map(template => {
             const isCompleted = completedDays.includes(template.dayKey);
             const templateExerciseNames = allExercises 
-              ? template.exerciseIds.map(id => allExercises.find(e => e.id === id)?.name).filter(Boolean).join(', ')
+              ? template.exercises.map(item => allExercises.find(e => e.id === item.exerciseId)?.name).filter(Boolean).join(', ')
               : 'Loading exercises...';
 
             return (
@@ -210,7 +216,7 @@ export default function Workout() {
                 <p className="text-white/50 text-xs mt-1 line-clamp-2">{templateExerciseNames || 'No exercises added yet.'}</p>
 
                 <button 
-                  disabled={template.exerciseIds.length === 0}
+                  disabled={template.exercises.length === 0}
                   onClick={() => startDay(template.dayKey)}
                   className="w-full mt-5 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all"
                 >
@@ -298,6 +304,10 @@ export default function Workout() {
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
           <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
           
+          <p className="text-white/50 font-medium mt-1 text-sm">
+            Target: <span className="text-white font-bold">{currentExercise.plannedSets} sets</span> × {currentExercise.minReps}–{currentExercise.maxReps} reps
+          </p>
+
           {currentExercise.notes && (
             <div className="mt-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3.5 flex items-start gap-3">
               <Info size={16} className="text-blue-400 shrink-0 mt-0.5" />
@@ -347,7 +357,7 @@ export default function Workout() {
 
           <div className="bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-3xl p-5">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-white font-bold text-lg">Log Set {currentSet}</h3>
+              <h3 className="text-white font-bold text-lg">Log Set {currentSet} of {currentExercise.plannedSets}</h3>
               <div className="flex items-center gap-2">
                 {!isBodyweight && Number(weight) > 20 && (
                   <button onClick={() => setShowPlateModal(true)} className="text-xs bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-bold flex items-center gap-1">
@@ -367,11 +377,11 @@ export default function Workout() {
                 <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
                   <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">{isBodyweight ? 'Added Weight (kg)' : 'Weight (kg)'}</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     inputMode="decimal"
                     value={weight} 
                     onChange={(e) => setWeight(e.target.value)} 
-                    className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" 
+                    className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/25" 
                     placeholder="0" 
                   />
                 </div>
@@ -379,12 +389,12 @@ export default function Workout() {
               <div className="bg-black/20 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
                 <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">Reps</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={reps} 
                   onChange={(e) => setReps(e.target.value)} 
-                  className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/20" 
+                  className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/25" 
                   placeholder="0" 
                   autoFocus 
                 />
