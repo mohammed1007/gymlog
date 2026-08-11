@@ -52,9 +52,10 @@ export default function MuscleMap({ muscleGroup, exerciseId }: MuscleMapProps) {
     ? exactMuscleTargets[exerciseId] 
     : [muscleGroup.toLowerCase()]; 
 
-  // Colors: Bright purple for targets, faint transparent wireframe for the rest
-  const getFill = (muscle: string) => targets.includes(muscle) ? '#a855f7' : 'rgba(255,255,255,0.02)';
-  const getStroke = (muscle: string) => targets.includes(muscle) ? '#d8b4fe' : 'rgba(255,255,255,0.1)';
+  // Updated to check multiple muscles for shared SVG shapes
+  const isTargeted = (...muscles: string[]) => muscles.some(m => targets.includes(m));
+  const getFill = (...muscles: string[]) => isTargeted(...muscles) ? '#a855f7' : 'rgba(255,255,255,0.02)';
+  const getStroke = (...muscles: string[]) => isTargeted(...muscles) ? '#d8b4fe' : 'rgba(255,255,255,0.1)';
 
   return (
     <div className="flex gap-4 items-center justify-center p-2">
@@ -64,16 +65,16 @@ export default function MuscleMap({ muscleGroup, exerciseId }: MuscleMapProps) {
         <circle cx="50" cy="20" r="12" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
         
         {/* Chest */}
-        <path d="M35,45 Q50,45 65,45 L65,60 Q50,65 35,60 Z" fill={getFill('chest')} stroke={getStroke('chest')} strokeWidth="1" />
+        <path d="M35,45 Q50,45 65,45 L65,60 Q50,65 35,60 Z" fill={getFill('chest', 'upper-chest')} stroke={getStroke('chest', 'upper-chest')} strokeWidth="1" />
         
         {/* Abs */}
         <rect x="40" y="62" width="20" height="35" rx="5" fill={getFill('abs')} stroke={getStroke('abs')} strokeWidth="1" />
         <rect x="35" y="65" width="4" height="30" rx="2" fill={getFill('obliques')} stroke={getStroke('obliques')} strokeWidth="1" />
         <rect x="61" y="65" width="4" height="30" rx="2" fill={getFill('obliques')} stroke={getStroke('obliques')} strokeWidth="1" />
 
-        {/* Delts */}
-        <circle cx="30" cy="45" r="7" fill={getFill('front-delts')} stroke={getStroke('front-delts')} strokeWidth="1" />
-        <circle cx="70" cy="45" r="7" fill={getFill('front-delts')} stroke={getStroke('front-delts')} strokeWidth="1" />
+        {/* Delts (Front & Side share this shape visually) */}
+        <circle cx="30" cy="45" r="7" fill={getFill('front-delts', 'side-delts')} stroke={getStroke('front-delts', 'side-delts')} strokeWidth="1" />
+        <circle cx="70" cy="45" r="7" fill={getFill('front-delts', 'side-delts')} stroke={getStroke('front-delts', 'side-delts')} strokeWidth="1" />
 
         {/* Biceps */}
         <ellipse cx="25" cy="65" rx="6" ry="12" fill={getFill('biceps')} stroke={getStroke('biceps')} strokeWidth="1" />
@@ -103,9 +104,9 @@ export default function MuscleMap({ muscleGroup, exerciseId }: MuscleMapProps) {
         {/* Lats */}
         <path d="M35,45 L50,90 L65,45 Q50,70 35,45 Z" fill={getFill('lats')} stroke={getStroke('lats')} strokeWidth="1" />
 
-        {/* Rear Delts */}
-        <circle cx="30" cy="45" r="7" fill={getFill('rear-delts')} stroke={getStroke('rear-delts')} strokeWidth="1" />
-        <circle cx="70" cy="45" r="7" fill={getFill('rear-delts')} stroke={getStroke('rear-delts')} strokeWidth="1" />
+        {/* Rear Delts (Rear & Side share this shape visually) */}
+        <circle cx="30" cy="45" r="7" fill={getFill('rear-delts', 'side-delts')} stroke={getStroke('rear-delts', 'side-delts')} strokeWidth="1" />
+        <circle cx="70" cy="45" r="7" fill={getFill('rear-delts', 'side-delts')} stroke={getStroke('rear-delts', 'side-delts')} strokeWidth="1" />
 
         {/* Triceps */}
         <ellipse cx="25" cy="65" rx="6" ry="12" fill={getFill('triceps')} stroke={getStroke('triceps')} strokeWidth="1" />
