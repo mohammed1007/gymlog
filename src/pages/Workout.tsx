@@ -406,7 +406,8 @@ export default function Workout() {
 
           {showMuscleMap && (
             <div className="mt-4 bg-black/40 border border-white/5 rounded-3xl p-4 flex justify-center animate-in zoom-in-95">
-              <MuscleMap muscleGroup={currentExercise.muscleGroup} />
+              {/* Add the exerciseId prop here! */}
+              <MuscleMap muscleGroup={currentExercise.muscleGroup} exerciseId={currentExercise.id} />
             </div>
           )}
 

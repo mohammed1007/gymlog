@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Download, Upload, Server, Calendar, List, ChevronRight, ArrowLeft, Plus, Trash2, X, Minus } from 'lucide-react';
 import { db } from '../db/db';
@@ -47,7 +47,7 @@ export default function Settings() {
     }
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -278,7 +278,7 @@ export default function Settings() {
                 >
                   <div className="flex items-center gap-4 text-left">
                     <div className="bg-black/40 rounded-xl p-1 border border-white/5">
-                      <MuscleMap muscleGroup={ex.muscleGroup} />
+                      <MuscleMap muscleGroup={ex.muscleGroup} exerciseId={ex.id} />
                     </div>
                     
                     <div>
