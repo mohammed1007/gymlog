@@ -1,9 +1,8 @@
 interface MuscleMapProps {
   muscleGroup: string;
-  exerciseId?: string; // We add exerciseId for precise mapping
+  exerciseId?: string;
 }
 
-// Maps specific exercises to their exact target muscles
 const exactMuscleTargets: Record<string, string[]> = {
   // Chest
   'machine-chest-press': ['chest', 'front-delts', 'triceps'],
@@ -49,85 +48,84 @@ const exactMuscleTargets: Record<string, string[]> = {
 };
 
 export default function MuscleMap({ muscleGroup, exerciseId }: MuscleMapProps) {
-  // Determine which sub-muscles to highlight
   const targets = exerciseId && exactMuscleTargets[exerciseId] 
     ? exactMuscleTargets[exerciseId] 
-    : [muscleGroup.toLowerCase()]; // Fallback to broad group if exercise isn't mapped
+    : [muscleGroup.toLowerCase()]; 
 
-  const isTargeted = (muscle: string) => targets.includes(muscle) ? '#a855f7' : '#3f3f46'; // Purple highlight, Gray default
+  // Colors: Bright purple for targets, faint transparent wireframe for the rest
+  const getFill = (muscle: string) => targets.includes(muscle) ? '#a855f7' : 'rgba(255,255,255,0.02)';
+  const getStroke = (muscle: string) => targets.includes(muscle) ? '#d8b4fe' : 'rgba(255,255,255,0.1)';
 
   return (
     <div className="flex gap-4 items-center justify-center p-2">
       {/* FRONT BODY */}
       <svg width="60" height="120" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
         <title>Front Muscles</title>
-        {/* Head & Neck */}
-        <circle cx="50" cy="20" r="12" fill="#27272a" />
+        <circle cx="50" cy="20" r="12" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
         
-        {/* Chest / Upper Chest */}
-        <path d="M35,45 Q50,45 65,45 L65,60 Q50,65 35,60 Z" fill={isTargeted('chest') || isTargeted('upper-chest') ? '#a855f7' : '#3f3f46'} />
+        {/* Chest */}
+        <path d="M35,45 Q50,45 65,45 L65,60 Q50,65 35,60 Z" fill={getFill('chest')} stroke={getStroke('chest')} strokeWidth="1" />
         
         {/* Abs */}
-        <rect x="40" y="62" width="20" height="35" rx="5" fill={isTargeted('abs') ? '#a855f7' : '#3f3f46'} />
-        <rect x="35" y="65" width="4" height="30" rx="2" fill={isTargeted('obliques') ? '#a855f7' : '#3f3f46'} />
-        <rect x="61" y="65" width="4" height="30" rx="2" fill={isTargeted('obliques') ? '#a855f7' : '#3f3f46'} />
+        <rect x="40" y="62" width="20" height="35" rx="5" fill={getFill('abs')} stroke={getStroke('abs')} strokeWidth="1" />
+        <rect x="35" y="65" width="4" height="30" rx="2" fill={getFill('obliques')} stroke={getStroke('obliques')} strokeWidth="1" />
+        <rect x="61" y="65" width="4" height="30" rx="2" fill={getFill('obliques')} stroke={getStroke('obliques')} strokeWidth="1" />
 
-        {/* Front Delts / Side Delts */}
-        <circle cx="30" cy="45" r="7" fill={isTargeted('front-delts') || isTargeted('side-delts') ? '#a855f7' : '#3f3f46'} />
-        <circle cx="70" cy="45" r="7" fill={isTargeted('front-delts') || isTargeted('side-delts') ? '#a855f7' : '#3f3f46'} />
+        {/* Delts */}
+        <circle cx="30" cy="45" r="7" fill={getFill('front-delts')} stroke={getStroke('front-delts')} strokeWidth="1" />
+        <circle cx="70" cy="45" r="7" fill={getFill('front-delts')} stroke={getStroke('front-delts')} strokeWidth="1" />
 
         {/* Biceps */}
-        <ellipse cx="25" cy="65" rx="6" ry="12" fill={isTargeted('biceps') ? '#a855f7' : '#3f3f46'} />
-        <ellipse cx="75" cy="65" rx="6" ry="12" fill={isTargeted('biceps') ? '#a855f7' : '#3f3f46'} />
+        <ellipse cx="25" cy="65" rx="6" ry="12" fill={getFill('biceps')} stroke={getStroke('biceps')} strokeWidth="1" />
+        <ellipse cx="75" cy="65" rx="6" ry="12" fill={getFill('biceps')} stroke={getStroke('biceps')} strokeWidth="1" />
         
         {/* Forearms */}
-        <ellipse cx="20" cy="90" rx="4" ry="10" fill="#3f3f46" />
-        <ellipse cx="80" cy="90" rx="4" ry="10" fill="#3f3f46" />
+        <ellipse cx="20" cy="90" rx="4" ry="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        <ellipse cx="80" cy="90" rx="4" ry="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
 
-        {/* Quads (Thighs) */}
-        <ellipse cx="40" cy="120" rx="9" ry="25" fill={isTargeted('quads') ? '#a855f7' : '#3f3f46'} />
-        <ellipse cx="60" cy="120" rx="9" ry="25" fill={isTargeted('quads') ? '#a855f7' : '#3f3f46'} />
+        {/* Quads */}
+        <ellipse cx="40" cy="120" rx="9" ry="25" fill={getFill('quads')} stroke={getStroke('quads')} strokeWidth="1" />
+        <ellipse cx="60" cy="120" rx="9" ry="25" fill={getFill('quads')} stroke={getStroke('quads')} strokeWidth="1" />
 
         {/* Calves (Front Shin) */}
-        <ellipse cx="40" cy="165" rx="6" ry="18" fill="#3f3f46" />
-        <ellipse cx="60" cy="165" rx="6" ry="18" fill="#3f3f46" />
+        <ellipse cx="40" cy="165" rx="6" ry="18" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        <ellipse cx="60" cy="165" rx="6" ry="18" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
       </svg>
 
       {/* BACK BODY */}
       <svg width="60" height="120" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
         <title>Back Muscles</title>
-        {/* Head & Neck */}
-        <circle cx="50" cy="20" r="12" fill="#27272a" />
+        <circle cx="50" cy="20" r="12" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
         
         {/* Traps */}
-        <path d="M38,35 L50,45 L62,35 Z" fill={isTargeted('traps') ? '#a855f7' : '#3f3f46'} />
+        <path d="M38,35 L50,45 L62,35 Z" fill={getFill('traps')} stroke={getStroke('traps')} strokeWidth="1" />
         
         {/* Lats */}
-        <path d="M35,45 L50,90 L65,45 Q50,70 35,45 Z" fill={isTargeted('lats') ? '#a855f7' : '#3f3f46'} />
+        <path d="M35,45 L50,90 L65,45 Q50,70 35,45 Z" fill={getFill('lats')} stroke={getStroke('lats')} strokeWidth="1" />
 
         {/* Rear Delts */}
-        <circle cx="30" cy="45" r="7" fill={isTargeted('rear-delts') || isTargeted('side-delts') ? '#a855f7' : '#3f3f46'} />
-        <circle cx="70" cy="45" r="7" fill={isTargeted('rear-delts') || isTargeted('side-delts') ? '#a855f7' : '#3f3f46'} />
+        <circle cx="30" cy="45" r="7" fill={getFill('rear-delts')} stroke={getStroke('rear-delts')} strokeWidth="1" />
+        <circle cx="70" cy="45" r="7" fill={getFill('rear-delts')} stroke={getStroke('rear-delts')} strokeWidth="1" />
 
         {/* Triceps */}
-        <ellipse cx="25" cy="65" rx="6" ry="12" fill={isTargeted('triceps') ? '#a855f7' : '#3f3f46'} />
-        <ellipse cx="75" cy="65" rx="6" ry="12" fill={isTargeted('triceps') ? '#a855f7' : '#3f3f46'} />
+        <ellipse cx="25" cy="65" rx="6" ry="12" fill={getFill('triceps')} stroke={getStroke('triceps')} strokeWidth="1" />
+        <ellipse cx="75" cy="65" rx="6" ry="12" fill={getFill('triceps')} stroke={getStroke('triceps')} strokeWidth="1" />
 
         {/* Forearms */}
-        <ellipse cx="20" cy="90" rx="4" ry="10" fill="#3f3f46" />
-        <ellipse cx="80" cy="90" rx="4" ry="10" fill="#3f3f46" />
+        <ellipse cx="20" cy="90" rx="4" ry="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        <ellipse cx="80" cy="90" rx="4" ry="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
 
         {/* Glutes */}
-        <ellipse cx="40" cy="100" rx="10" ry="12" fill={isTargeted('glutes') ? '#a855f7' : '#3f3f46'} />
-        <ellipse cx="60" cy="100" rx="10" ry="12" fill={isTargeted('glutes') ? '#a855f7' : '#3f3f46'} />
+        <ellipse cx="40" cy="100" rx="10" ry="12" fill={getFill('glutes')} stroke={getStroke('glutes')} strokeWidth="1" />
+        <ellipse cx="60" cy="100" rx="10" ry="12" fill={getFill('glutes')} stroke={getStroke('glutes')} strokeWidth="1" />
 
         {/* Hamstrings */}
-        <ellipse cx="40" cy="125" rx="8" ry="20" fill={isTargeted('hamstrings') ? '#a855f7' : '#3f3f46'} />
-        <ellipse cx="60" cy="125" rx="8" ry="20" fill={isTargeted('hamstrings') ? '#a855f7' : '#3f3f46'} />
+        <ellipse cx="40" cy="125" rx="8" ry="20" fill={getFill('hamstrings')} stroke={getStroke('hamstrings')} strokeWidth="1" />
+        <ellipse cx="60" cy="125" rx="8" ry="20" fill={getFill('hamstrings')} stroke={getStroke('hamstrings')} strokeWidth="1" />
 
         {/* Calves (Back) */}
-        <ellipse cx="40" cy="165" rx="7" ry="15" fill={isTargeted('calves') ? '#a855f7' : '#3f3f46'} />
-        <ellipse cx="60" cy="165" rx="7" ry="15" fill={isTargeted('calves') ? '#a855f7' : '#3f3f46'} />
+        <ellipse cx="40" cy="165" rx="7" ry="15" fill={getFill('calves')} stroke={getStroke('calves')} strokeWidth="1" />
+        <ellipse cx="60" cy="165" rx="7" ry="15" fill={getFill('calves')} stroke={getStroke('calves')} strokeWidth="1" />
       </svg>
     </div>
   );

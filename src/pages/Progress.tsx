@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { TrendingUp, Activity, Dumbbell, Flame, Scale, Plus, CheckSquare, Square, Target, Award } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { TrendingUp, Dumbbell, Flame, Scale, Plus, CheckSquare, Square, Target, Award, Calendar as CalendarIcon, Activity } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar } from 'recharts';
 import { db } from '../db/db';
 
 export default function Progress() {
-  const pastWorkouts = useLiveQuery(() => db.workoutLogs.toArray());
+  const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').toArray());
   const bodyweightHistory = useLiveQuery(() => db.bodyweightLogs.orderBy('date').reverse().toArray());
   const allExercises = useLiveQuery(() => db.exercises.toArray());
   
@@ -19,20 +19,27 @@ export default function Progress() {
     return <div className="p-6 text-white/50">Loading metrics...</div>;
   }
 
-  const totalSessions = pastWorkouts.length;
-  let totalVolume = 0;
-  
+  // --- VOLUME CHART CALCULATIONS ---
+  const volumeHistory = pastWorkouts.map(log => {
+    let vol = 0;
+    log.exercises.forEach(ex => {
+      ex.sets.forEach(set => {
+        const weightToUse = set.weight > 0 ? set.weight : 1; 
+        vol += (set.reps * weightToUse);
+      });
+    });
+    return {
+      date: new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      volume: vol
+    };
+  });
+
   const muscleBalance: Record<string, number> = {
     Chest: 0, Back: 0, Legs: 0, Shoulders: 0, Arms: 0, Core: 0
   };
 
   pastWorkouts.forEach(log => {
     log.exercises.forEach(exLog => {
-      exLog.sets.forEach(set => {
-        const weightToUse = set.weight > 0 ? set.weight : 1; 
-        totalVolume += (set.reps * weightToUse);
-      });
-
       const exerciseDef = allExercises.find(e => e.id === exLog.exerciseId);
       if (exerciseDef && muscleBalance[exerciseDef.muscleGroup] !== undefined) {
         muscleBalance[exerciseDef.muscleGroup] += exLog.sets.length;
@@ -58,7 +65,6 @@ export default function Progress() {
     return max;
   };
 
-  // --- THEORETICAL 1RM (Brzycki Formula) ---
   const calculateEstimated1RM = (weight: number, reps: number) => {
     if (weight <= 0 || reps <= 0) return 0;
     if (reps >= 37) return weight;
@@ -85,6 +91,20 @@ export default function Progress() {
     { name: 'Lat Pulldown', max: getMaxWeight('lat-pulldown-machine'), est1RM: getEstimatedMax1RM('lat-pulldown-machine') },
   ];
 
+  const generateHeatmapDays = () => {
+    const days = [];
+    const today = new Date();
+    for (let i = 83; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const hasWorkout = pastWorkouts.some(log => log.date.startsWith(dateStr));
+      days.push({ date: dateStr, active: hasWorkout });
+    }
+    return days;
+  };
+  const heatmapDays = generateHeatmapDays();
+
   const handleLogWeight = async () => {
     if (!weightInput) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
@@ -109,12 +129,12 @@ export default function Progress() {
   const formatDate = (isoString: string) => new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const chartData = [...bodyweightHistory].reverse().map(log => ({ date: formatDate(log.date), weight: log.weight }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomVolumeTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl">
           <p className="text-white/50 text-xs mb-1 font-medium">{label}</p>
-          <p className="text-white font-bold text-lg tabular-nums">{payload[0].value} kg</p>
+          <p className="text-amber-400 font-bold text-lg tabular-nums">{payload[0].value.toLocaleString()} kg</p>
         </div>
       );
     }
@@ -122,26 +142,51 @@ export default function Progress() {
   };
 
   return (
-    <div className="p-6 min-h-full flex flex-col animate-in fade-in">
+    <div className="p-6 min-h-full flex flex-col animate-in fade-in pb-32">
       <header className="mb-8 mt-4">
         <h1 className="text-3xl font-bold text-white tracking-tight">Progress</h1>
       </header>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5">
-          <div className="flex items-center gap-2 mb-3"><Activity size={16} className="text-blue-400" /><h3 className="text-xs font-bold text-white/50 uppercase">Sessions</h3></div>
-          <p className="text-4xl font-bold text-white">{totalSessions}</p>
-        </div>
-        <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5">
-          <div className="flex items-center gap-2 mb-3"><Flame size={16} className="text-orange-400" /><h3 className="text-xs font-bold text-white/50 uppercase">Volume</h3></div>
-          <p className="text-4xl font-bold text-white">{totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume}</p>
+      {/* NEW: Volume Progression Chart */}
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Activity className="text-amber-400" size={20}/> Volume Progression</h2>
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+        <p className="text-white/50 text-xs mb-4">Total kg moved per session over time.</p>
+        {volumeHistory.length > 0 ? (
+          <div className="h-48 w-full mt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={volumeHistory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" fontSize={10} />
+                <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} tickFormatter={(val) => val > 1000 ? `${(val/1000).toFixed(1)}k` : val} />
+                <Tooltip content={<CustomVolumeTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Bar dataKey="volume" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-32 flex items-center justify-center border border-dashed border-white/10 rounded-2xl">
+            <p className="text-white/30 text-sm">Log a session to see your volume trend.</p>
+          </div>
+        )}
+      </div>
+
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><CalendarIcon className="text-green-400" size={20}/> Consistency Heatmap</h2>
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+        <p className="text-white/50 text-xs mb-4">Gym attendance over the past 12 weeks.</p>
+        <div className="grid grid-cols-12 gap-1.5 justify-items-center">
+          {heatmapDays.map((day, idx) => (
+            <div 
+              key={idx} 
+              title={day.date}
+              className={`w-full aspect-square rounded-md transition-all ${day.active ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]' : 'bg-white/5 border border-white/5'}`}
+            />
+          ))}
         </div>
       </div>
 
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Target className="text-blue-400" size={20}/> Training Balance</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
         <p className="text-white/50 text-xs mb-2">Total working sets per muscle group.</p>
-        {totalSessions > 0 ? (
+        {pastWorkouts.length > 0 ? (
           <div className="h-56 w-full -ml-2">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
@@ -188,7 +233,7 @@ export default function Progress() {
               <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" fontSize={10} />
                 <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomVolumeTooltip />} />
                 <Line type="monotone" dataKey="weight" stroke="#a855f7" strokeWidth={3} dot={{ r: 4, fill: '#a855f7' }} />
               </LineChart>
             </ResponsiveContainer>
