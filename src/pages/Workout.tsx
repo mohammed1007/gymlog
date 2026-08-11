@@ -371,7 +371,7 @@ export default function Workout() {
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 pt-10">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 snap-x">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
             const isActive = idx === currentExerciseIndex;
@@ -383,9 +383,17 @@ export default function Workout() {
                   setCurrentExerciseIndex(idx);
                   setCurrentExerciseSets([]);
                 }}
-                className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${isActive ? 'bg-blue-500 border-blue-400 text-white shadow-lg' : isDone ? 'bg-white/5 border-white/5 text-white/30' : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'}`}
+                className={`snap-center shrink-0 px-4 py-2.5 rounded-[1.25rem] text-left transition-all border ${
+                  isActive ? 'bg-blue-500 border-blue-400 shadow-lg' : isDone ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10 hover:bg-white/20'
+                }`}
               >
-                <div className="flex items-center gap-1.5">{isDone && <Check size={12} />}{ex.name}</div>
+                <div className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-blue-200' : 'text-white/40'}`}>
+                  {ex.muscleGroup}
+                </div>
+                <div className={`text-xs font-bold flex items-center gap-1.5 ${isActive ? 'text-white' : 'text-white/70'}`}>
+                  {isDone && <Check size={12} />}
+                  {ex.name}
+                </div>
               </button>
             );
           })}

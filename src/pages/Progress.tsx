@@ -19,7 +19,7 @@ export default function Progress() {
     return <div className="p-6 text-white/50">Loading metrics...</div>;
   }
 
-  // --- VOLUME CHART CALCULATIONS ---
+  // Calculate volume progression
   const volumeHistory = pastWorkouts.map(log => {
     let vol = 0;
     log.exercises.forEach(ex => {
@@ -143,46 +143,54 @@ export default function Progress() {
 
   return (
     <div className="p-6 min-h-full flex flex-col animate-in fade-in pb-32">
-      <header className="mb-8 mt-4">
+      <header className="mb-8 mt-4 flex justify-between items-end">
         <h1 className="text-3xl font-bold text-white tracking-tight">Progress</h1>
+        <div className="text-right">
+          <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">Total Sessions</p>
+          <p className="text-xl font-bold text-blue-400">{pastWorkouts.length}</p>
+        </div>
       </header>
 
-      {/* NEW: Volume Progression Chart */}
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Activity className="text-amber-400" size={20}/> Volume Progression</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
-        <p className="text-white/50 text-xs mb-4">Total kg moved per session over time.</p>
-        {volumeHistory.length > 0 ? (
+      {/* 1. Daily Protocol */}
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Flame className="text-amber-400" size={20}/> Daily Protocol</h2>
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
+        {allHabits?.map(habit => {
+          const isDone = todayHabitsLog?.completedIds.includes(habit.id);
+          return (
+            <button key={habit.id} onClick={() => toggleHabit(habit.id)} className="flex items-center gap-4 w-full text-left p-3 rounded-2xl bg-black/20 border border-white/5">
+              {isDone ? <CheckSquare className="text-blue-400" size={22} /> : <Square className="text-white/30" size={22} />}
+              <span className={`text-sm font-medium ${isDone ? 'text-white line-through opacity-50' : 'text-white'}`}>{habit.label}</span>
+            </button>
+          );
+        })}
+        {allHabits?.length === 0 && <p className="text-white/30 text-xs">Add items in Settings.</p>}
+      </div>
+
+      {/* 2. Mass Tracker */}
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Scale className="text-purple-400" size={20}/> Mass Tracker</h2>
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
+        <div className="flex gap-3">
+          <div className="flex-1 bg-black/20 rounded-2xl p-3 border border-white/5">
+            <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">Morning Weight (kg)</label>
+            <input type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)} className="w-full bg-transparent text-2xl font-bold text-white outline-none" placeholder="0.0" />
+          </div>
+          <button disabled={!weightInput} onClick={handleLogWeight} className="bg-purple-500 disabled:bg-white/10 text-white font-bold px-6 rounded-2xl flex items-center justify-center"><Plus size={24} /></button>
+        </div>
+        {chartData.length > 0 && (
           <div className="h-48 w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={volumeHistory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" fontSize={10} />
-                <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} tickFormatter={(val) => val > 1000 ? `${(val/1000).toFixed(1)}k` : val} />
-                <Tooltip content={<CustomVolumeTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                <Bar dataKey="volume" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
+                <Tooltip content={<CustomVolumeTooltip />} />
+                <Line type="monotone" dataKey="weight" stroke="#a855f7" strokeWidth={3} dot={{ r: 4, fill: '#a855f7' }} />
+              </LineChart>
             </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="h-32 flex items-center justify-center border border-dashed border-white/10 rounded-2xl">
-            <p className="text-white/30 text-sm">Log a session to see your volume trend.</p>
           </div>
         )}
       </div>
 
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><CalendarIcon className="text-green-400" size={20}/> Consistency Heatmap</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
-        <p className="text-white/50 text-xs mb-4">Gym attendance over the past 12 weeks.</p>
-        <div className="grid grid-cols-12 gap-1.5 justify-items-center">
-          {heatmapDays.map((day, idx) => (
-            <div 
-              key={idx} 
-              title={day.date}
-              className={`w-full aspect-square rounded-md transition-all ${day.active ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]' : 'bg-white/5 border border-white/5'}`}
-            />
-          ))}
-        </div>
-      </div>
-
+      {/* 3. Training Balance */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Target className="text-blue-400" size={20}/> Training Balance</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
         <p className="text-white/50 text-xs mb-2">Total working sets per muscle group.</p>
@@ -204,43 +212,44 @@ export default function Progress() {
         )}
       </div>
 
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Flame className="text-amber-400" size={20}/> Daily Protocol</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
-        {allHabits?.map(habit => {
-          const isDone = todayHabitsLog?.completedIds.includes(habit.id);
-          return (
-            <button key={habit.id} onClick={() => toggleHabit(habit.id)} className="flex items-center gap-4 w-full text-left p-3 rounded-2xl bg-black/20 border border-white/5">
-              {isDone ? <CheckSquare className="text-blue-400" size={22} /> : <Square className="text-white/30" size={22} />}
-              <span className={`text-sm font-medium ${isDone ? 'text-white line-through opacity-50' : 'text-white'}`}>{habit.label}</span>
-            </button>
-          );
-        })}
-        {allHabits?.length === 0 && <p className="text-white/30 text-xs">Add items in Settings.</p>}
+      {/* 4. Consistency Heatmap */}
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><CalendarIcon className="text-green-400" size={20}/> Consistency Heatmap</h2>
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+        <p className="text-white/50 text-xs mb-4">Gym attendance over the past 12 weeks.</p>
+        <div className="grid grid-cols-12 gap-1.5 justify-items-center">
+          {heatmapDays.map((day, idx) => (
+            <div 
+              key={idx} 
+              title={day.date}
+              className={`w-full aspect-square rounded-md transition-all ${day.active ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]' : 'bg-white/5 border border-white/5'}`}
+            />
+          ))}
+        </div>
       </div>
 
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Scale className="text-purple-400" size={20}/> Mass Tracker</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
-        <div className="flex gap-3">
-          <div className="flex-1 bg-black/20 rounded-2xl p-3 border border-white/5">
-            <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase">Morning Weight (kg)</label>
-            <input type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)} className="w-full bg-transparent text-2xl font-bold text-white outline-none" placeholder="0.0" />
-          </div>
-          <button disabled={!weightInput} onClick={handleLogWeight} className="bg-purple-500 disabled:bg-white/10 text-white font-bold px-6 rounded-2xl flex items-center justify-center"><Plus size={24} /></button>
-        </div>
-        {chartData.length > 0 && (
+      {/* 5. Volume Progression */}
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Activity className="text-amber-400" size={20}/> Volume Progression</h2>
+      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+        <p className="text-white/50 text-xs mb-4">Total kg moved per session over time.</p>
+        {volumeHistory.length > 0 ? (
           <div className="h-48 w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={volumeHistory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" fontSize={10} />
-                <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
-                <Tooltip content={<CustomVolumeTooltip />} />
-                <Line type="monotone" dataKey="weight" stroke="#a855f7" strokeWidth={3} dot={{ r: 4, fill: '#a855f7' }} />
-              </LineChart>
+                <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} tickFormatter={(val) => val > 1000 ? `${(val/1000).toFixed(1)}k` : val} />
+                <Tooltip content={<CustomVolumeTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Bar dataKey="volume" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-32 flex items-center justify-center border border-dashed border-white/10 rounded-2xl">
+            <p className="text-white/30 text-sm">Log a session to see your volume trend.</p>
           </div>
         )}
       </div>
 
+      {/* 6. All-Time Max Lifts */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="text-green-400" size={20}/> All-Time Max Lifts & Estimated 1RM</h2>
       <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 space-y-5">
         {keyLifts.map((lift, i) => (

@@ -37,6 +37,8 @@ export async function seedDatabase() {
       { id: 'bench-dips', name: 'Bench Dips', muscleGroup: 'Arms', equipment: 'Bodyweight', defaultSets: 3, minReps: 8, maxReps: 12, progressionType: 'bodyweight', restSeconds: 60, notes: 'Keep back close to the bench to protect shoulders.' },
       { id: 'dead-hangs', name: 'Dead Hangs (Grip)', muscleGroup: 'Arms', equipment: 'Bodyweight', defaultSets: 3, minReps: 45, maxReps: 60, progressionType: 'bodyweight', restSeconds: 45, notes: 'Active shoulder engagement or passive stretch.' },
 
+      // --- CORE EXERCISES ---
+      { id: 'ab-crunch-machine', name: 'Ab Crunch Machine', muscleGroup: 'Core', equipment: 'Machine', defaultSets: 3, minReps: 12, maxReps: 15, progressionType: 'machine', restSeconds: 60, notes: 'Round your back slightly; focus on shortening the distance between ribs and pelvis.' },
       { id: 'hanging-leg-raises', name: 'Hanging Leg Raises', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 10, maxReps: 15, progressionType: 'bodyweight', restSeconds: 60, notes: 'Avoid swinging; posteriorly tilt pelvis at the top.' },
       { id: 'front-planks', name: 'Front Planks', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 45, maxReps: 60, progressionType: 'bodyweight', restSeconds: 45, notes: 'Squeeze glutes and tuck pelvis under.' },
       { id: 'side-planks', name: 'Side Planks', muscleGroup: 'Core', equipment: 'Bodyweight', defaultSets: 3, minReps: 30, maxReps: 45, progressionType: 'bodyweight', restSeconds: 45, notes: 'Stack hips vertically, keep core rigid.' }
@@ -58,7 +60,8 @@ export async function seedDatabase() {
           { exerciseId: 'lateral-raise-machine', sets: 3 },
           { exerciseId: 'machine-preacher-curl', sets: 3 },
           { exerciseId: 'triceps-press-machine', sets: 3 },
-          { exerciseId: 'hanging-leg-raises', sets: 3 }
+          { exerciseId: 'hanging-leg-raises', sets: 3 },
+          { exerciseId: 'front-planks', sets: 3 } // Added to Day A
         ]
       },
       {
@@ -74,7 +77,8 @@ export async function seedDatabase() {
           { exerciseId: 'shoulder-press-machine', sets: 3 },
           { exerciseId: 'reverse-pec-deck', sets: 3 },
           { exerciseId: 'machine-preacher-curl', sets: 3 },
-          { exerciseId: 'triceps-press-machine', sets: 3 }
+          { exerciseId: 'triceps-press-machine', sets: 3 },
+          { exerciseId: 'ab-crunch-machine', sets: 3 } // Added to Day B
         ]
       },
       {
