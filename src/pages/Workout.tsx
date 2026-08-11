@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X } from 'lucide-react';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X, Eye, EyeOff, Play, Trash2, Clock, AlertTriangle } from 'lucide-react';
 import RestTimer from '../components/RestTimer';
+import MuscleMap from '../components/MuscleMap';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
 type WorkoutState = 'select-day' | 'general-warmup' | 'working-sets' | 'rest' | 'cooldown' | 'summary';
@@ -10,33 +11,100 @@ export default function Workout() {
   const [currentState, setCurrentState] = useState<WorkoutState>('select-day');
   const [selectedDayKey, setSelectedDayKey] = useState<string>('Day A');
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [currentSet, setCurrentSet] = useState(1);
   const [isWeighted, setIsWeighted] = useState(false);
   const [showPlateModal, setShowPlateModal] = useState(false);
+  const [showMuscleMap, setShowMuscleMap] = useState(false);
   
+  // Input states
+  const [reps, setReps] = useState<string>('');
+  const [weight, setWeight] = useState<string>(''); 
+  
+  // Data tracking
+  const [startTime, setStartTime] = useState<number>(Date.now());
+  const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
+  const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
+  
+  // Dynamic Set Counter (Bug Fix: Mathematically perfect)
+  const currentSet = currentExerciseSets.length + 1;
+
+  // Recovery State
+  const [hasSavedSession, setHasSavedSession] = useState<any>(null);
+
   const [completedDays, setCompletedDays] = useState<string[]>(() => {
     const saved = localStorage.getItem('gym_completed_days');
     return saved ? JSON.parse(saved) : [];
   });
 
+  const allExercises = useLiveQuery(() => db.exercises.toArray());
+  const storedTemplates = useLiveQuery(() => db.routineTemplates.toArray());
+  const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
+
+  const [warmup, setWarmup] = useState([
+    { id: 1, text: '5 min cardio (Treadmill/Bike)', done: false },
+    { id: 2, text: 'Arm circles — 10 fwd + 10 bwd', done: false },
+    { id: 3, text: 'Band pull-aparts — 15 reps', done: false },
+    { id: 4, text: 'Shoulder rotations — 10/side', done: false },
+  ]);
+
+  // --- 1. GLOBAL TIMER LOGIC ---
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    let interval: any;
+    if (currentState !== 'select-day' && currentState !== 'summary') {
+      interval = setInterval(() => setNow(Date.now()), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [currentState]);
+
+  const elapsedMs = now - startTime;
+  const elapsedMins = Math.floor(elapsedMs / 60000);
+  const elapsedSecs = Math.floor((elapsedMs % 60000) / 1000);
+  const isDragging = elapsedMins >= 90; // Over 90 minutes triggers warning
+
+  // --- 2. SESSION RECOVERY / PERSISTENCE ---
+  useEffect(() => {
+    const saved = localStorage.getItem('active_gym_session');
+    if (saved && currentState === 'select-day') {
+      setHasSavedSession(JSON.parse(saved));
+    }
+  }, [currentState]);
+
+  useEffect(() => {
+    if (currentState !== 'select-day' && currentState !== 'summary') {
+      localStorage.setItem('active_gym_session', JSON.stringify({
+        selectedDayKey, currentExerciseIndex, currentExerciseSets, workoutLog, startTime, currentState, warmup
+      }));
+    } else if (currentState === 'summary') {
+      localStorage.removeItem('active_gym_session');
+    }
+  }, [currentState, selectedDayKey, currentExerciseIndex, currentExerciseSets, workoutLog, startTime, warmup]);
+
+  const handleResumeSession = () => {
+    if (!hasSavedSession) return;
+    setSelectedDayKey(hasSavedSession.selectedDayKey);
+    setCurrentExerciseIndex(hasSavedSession.currentExerciseIndex);
+    setCurrentExerciseSets(hasSavedSession.currentExerciseSets);
+    setWorkoutLog(hasSavedSession.workoutLog);
+    setStartTime(hasSavedSession.startTime);
+    setWarmup(hasSavedSession.warmup);
+    setCurrentState(hasSavedSession.currentState);
+    setHasSavedSession(null);
+  };
+
+  const handleDiscardSession = () => {
+    localStorage.removeItem('active_gym_session');
+    setHasSavedSession(null);
+  };
+
+  // --- DATA SYNC ---
   useEffect(() => {
     localStorage.setItem('gym_completed_days', JSON.stringify(completedDays));
   }, [completedDays]);
 
   useEffect(() => {
     setIsWeighted(false);
+    setShowMuscleMap(false); // Reset muscle map toggle on new exercise
   }, [currentExerciseIndex]);
-  
-  const [reps, setReps] = useState<string>('');
-  const [weight, setWeight] = useState<string>(''); 
-  
-  const [startTime, setStartTime] = useState<number>(Date.now());
-  const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
-  const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
-  
-  const allExercises = useLiveQuery(() => db.exercises.toArray());
-  const storedTemplates = useLiveQuery(() => db.routineTemplates.toArray());
-  const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
 
   useEffect(() => {
     if (!pastWorkouts || !storedTemplates) return;
@@ -58,10 +126,8 @@ export default function Workout() {
   }, [pastWorkouts, storedTemplates]);
 
   const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
-  
   const routineItems = activeTemplate?.exercises || (activeTemplate as any)?.exerciseIds?.map((id: string) => ({ exerciseId: id, sets: 3 })) || [];
   
-  // Cleanly resolved exercises using a type-safe loop
   const exercises: (ExerciseDefinition & { plannedSets: number })[] = [];
   if (allExercises && activeTemplate) {
     for (const item of routineItems) {
@@ -74,13 +140,6 @@ export default function Workout() {
     }
   }
 
-  const [warmup, setWarmup] = useState([
-    { id: 1, text: '5 min cardio (Treadmill/Bike)', done: false },
-    { id: 2, text: 'Arm circles — 10 fwd + 10 bwd', done: false },
-    { id: 3, text: 'Band pull-aparts — 15 reps', done: false },
-    { id: 4, text: 'Shoulder rotations — 10/side', done: false },
-  ]);
-
   const toggleWarmup = (id: number) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
     setWarmup(warmup.map(w => w.id === id ? { ...w, done: !w.done } : w));
@@ -89,7 +148,6 @@ export default function Workout() {
   const startDay = (dayKey: string) => {
     setSelectedDayKey(dayKey);
     setCurrentExerciseIndex(0);
-    setCurrentSet(1);
     setCurrentExerciseSets([]);
     setWorkoutLog([]);
     setStartTime(Date.now());
@@ -111,7 +169,7 @@ export default function Workout() {
     setCurrentExerciseSets(updatedSets);
     setReps('');
 
-    if (currentSet < currentExercise.plannedSets) {
+    if (updatedSets.length < currentExercise.plannedSets) {
       setCurrentState('rest');
     } else {
       const updatedLog = [...workoutLog, {
@@ -121,7 +179,6 @@ export default function Workout() {
       }];
       setWorkoutLog(updatedLog);
       setCurrentExerciseSets([]);
-      setCurrentSet(1);
       
       const nextIncompleteIndex = exercises.findIndex(
         ex => !updatedLog.some(log => log.exerciseId === ex.id)
@@ -169,11 +226,38 @@ export default function Workout() {
     return breakdown;
   };
 
+  const renderGlobalTimer = () => {
+    if (currentState === 'select-day' || currentState === 'summary') return null;
+    return (
+      <div className={`fixed top-0 left-0 right-0 z-40 p-2 flex justify-center backdrop-blur-md border-b border-white/5 ${isDragging ? 'bg-amber-500/20' : 'bg-black/20'}`}>
+        <div className="flex items-center gap-2">
+          {isDragging ? <AlertTriangle size={14} className="text-amber-400 animate-pulse" /> : <Clock size={14} className="text-white/50" />}
+          <span className={`text-xs font-bold tabular-nums tracking-widest ${isDragging ? 'text-amber-400' : 'text-white/70'}`}>
+            {elapsedMins}:{elapsedSecs.toString().padStart(2, '0')}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   const renderDaySelection = () => {
     if (!storedTemplates) return <div className="p-6 text-white/50">Loading routines...</div>;
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in">
+        {hasSavedSession && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-3xl p-5 mb-6 flex flex-col gap-4">
+            <div>
+              <h3 className="text-white font-bold text-lg flex items-center gap-2"><Play size={18} className="text-blue-400 fill-blue-400" /> Session in Progress</h3>
+              <p className="text-blue-200/70 text-sm mt-1">You have an unfinished {hasSavedSession.selectedDayKey} workout.</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleResumeSession} className="flex-1 bg-blue-500 text-white font-bold py-3 rounded-xl text-sm">Resume</button>
+              <button onClick={handleDiscardSession} className="px-4 bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 font-bold rounded-xl transition-all"><Trash2 size={18} /></button>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-end mb-8 mt-4">
           <div>
             <h2 className="text-3xl font-bold text-white tracking-tight">Routines</h2>
@@ -196,7 +280,7 @@ export default function Workout() {
             const templateExerciseNames = allExercises 
               ? templateExercises.map((item: any) => {
                   const id = typeof item === 'string' ? item : item.exerciseId;
-                  return allExercises.find((e: ExerciseDefinition) => e.id === id)?.name;
+                  return allExercises.find(e => e.id === id)?.name;
                 }).filter(Boolean).join(', ')
               : 'Loading exercises...';
 
@@ -240,8 +324,8 @@ export default function Workout() {
 
   const renderGeneralWarmup = () => (
     <div className="flex-1 flex flex-col animate-in fade-in">
-      <div className="flex items-center justify-between mb-8 mt-4">
-        <button onClick={() => setCurrentState('select-day')} className="text-sm text-blue-400 font-medium">← Back</button>
+      <div className="flex items-center justify-between mb-8 mt-10">
+        <button onClick={() => setCurrentState('select-day')} className="text-sm text-blue-400 font-medium">← Save & Exit</button>
         <span className="text-xs font-bold uppercase tracking-widest text-white/50">{selectedDayKey}</span>
       </div>
       <h2 className="text-3xl font-bold text-white mb-8 tracking-tight">Warm-up</h2>
@@ -286,8 +370,8 @@ export default function Workout() {
     const plateBreakdown = getPlateBreakdown(Number(weight) || 0);
 
     return (
-      <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
+      <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 pt-10">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
             const isActive = idx === currentExerciseIndex;
@@ -297,7 +381,6 @@ export default function Workout() {
                 onClick={() => {
                   if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
                   setCurrentExerciseIndex(idx);
-                  setCurrentSet(1);
                   setCurrentExerciseSets([]);
                 }}
                 className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${isActive ? 'bg-blue-500 border-blue-400 text-white shadow-lg' : isDone ? 'bg-white/5 border-white/5 text-white/30' : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'}`}
@@ -312,9 +395,20 @@ export default function Workout() {
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
           <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
           
-          <p className="text-white/50 font-medium mt-1 text-sm">
-            Target: <span className="text-white font-bold">{currentExercise.plannedSets} sets</span> × {currentExercise.minReps}–{currentExercise.maxReps} reps
-          </p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-white/50 font-medium text-sm">
+              Target: <span className="text-white font-bold">{currentExercise.plannedSets} sets</span> × {currentExercise.minReps}–{currentExercise.maxReps} reps
+            </p>
+            <button onClick={() => setShowMuscleMap(!showMuscleMap)} className="flex items-center gap-1.5 text-xs font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1.5 rounded-lg border border-purple-500/20">
+              {showMuscleMap ? <EyeOff size={14}/> : <Eye size={14}/>} {showMuscleMap ? 'Hide Muscles' : 'Target Muscles'}
+            </button>
+          </div>
+
+          {showMuscleMap && (
+            <div className="mt-4 bg-black/40 border border-white/5 rounded-3xl p-4 flex justify-center animate-in zoom-in-95">
+              <MuscleMap muscleGroup={currentExercise.muscleGroup} />
+            </div>
+          )}
 
           {currentExercise.notes && (
             <div className="mt-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3.5 flex items-start gap-3">
@@ -404,7 +498,6 @@ export default function Workout() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReps(e.target.value)} 
                   className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/25" 
                   placeholder="0" 
-                  autoFocus 
                 />
               </div>
             </div>
@@ -439,7 +532,7 @@ export default function Workout() {
   };
 
   const renderCooldown = () => (
-    <div className="flex-1 flex flex-col animate-in fade-in">
+    <div className="flex-1 flex flex-col animate-in fade-in pt-10">
       <h2 className="text-3xl font-bold text-white mb-2 mt-4 tracking-tight">Cool-down</h2>
       <p className="text-white/60 mb-8">Great job. Let's stretch the trained muscles.</p>
       <div className="space-y-4 flex-1">
@@ -476,21 +569,18 @@ export default function Workout() {
 
   return (
     <div className="p-6 min-h-full flex flex-col overflow-x-hidden">
+      {renderGlobalTimer()}
       {currentState === 'select-day' && renderDaySelection()}
       {currentState === 'general-warmup' && renderGeneralWarmup()}
       {currentState === 'working-sets' && renderWorkingSets()}
       {currentState === 'rest' && (
-        <RestTimer 
-          initialSeconds={dynamicRestSeconds} 
-          onSkip={() => {
-            setCurrentSet(prev => prev + 1);
-            setCurrentState('working-sets');
-          }}
-          onComplete={() => {
-            setCurrentSet(prev => prev + 1);
-            setCurrentState('working-sets');
-          }}
-        />
+        <div className="flex-1 flex flex-col pt-10">
+          <RestTimer 
+            initialSeconds={dynamicRestSeconds} 
+            onSkip={() => setCurrentState('working-sets')}
+            onComplete={() => setCurrentState('working-sets')}
+          />
+        </div>
       )}
       {currentState === 'cooldown' && renderCooldown()}
       {currentState === 'summary' && renderSummary()}
