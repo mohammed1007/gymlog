@@ -153,7 +153,7 @@ export default function Progress() {
 
       {/* 1. Daily Protocol */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Flame className="text-amber-400" size={20}/> Daily Protocol</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
+      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
         {allHabits?.map(habit => {
           const isDone = todayHabitsLog?.completedIds.includes(habit.id);
           return (
@@ -168,7 +168,7 @@ export default function Progress() {
 
       {/* 2. Mass Tracker */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Scale className="text-purple-400" size={20}/> Mass Tracker</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
+      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
         <div className="flex gap-3">
           <div className="flex-1 bg-black/20 rounded-2xl p-3 border border-white/5">
             <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">Morning Weight (kg)</label>
@@ -192,7 +192,7 @@ export default function Progress() {
 
       {/* 3. Training Balance */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Target className="text-blue-400" size={20}/> Training Balance</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
+      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
         <p className="text-white/50 text-xs mb-2">Total working sets per muscle group.</p>
         {pastWorkouts.length > 0 ? (
           <div className="h-56 w-full -ml-2">
@@ -214,7 +214,7 @@ export default function Progress() {
 
       {/* 4. Consistency Heatmap */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><CalendarIcon className="text-green-400" size={20}/> Consistency Heatmap</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
         <p className="text-white/50 text-xs mb-4">Gym attendance over the past 12 weeks.</p>
         <div className="grid grid-cols-12 gap-1.5 justify-items-center">
           {heatmapDays.map((day, idx) => (
@@ -229,7 +229,7 @@ export default function Progress() {
 
       {/* 5. Volume Progression */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Activity className="text-amber-400" size={20}/> Volume Progression</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
         <p className="text-white/50 text-xs mb-4">Total kg moved per session over time.</p>
         {volumeHistory.length > 0 ? (
           <div className="h-48 w-full mt-2">
@@ -251,7 +251,7 @@ export default function Progress() {
 
       {/* 6. All-Time Max Lifts */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="text-green-400" size={20}/> All-Time Max Lifts & Estimated 1RM</h2>
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 space-y-5">
+      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 space-y-5">
         {keyLifts.map((lift, i) => (
           <div key={i} className="flex justify-between items-center group border-b border-white/5 pb-4 last:border-0 last:pb-0">
             <div className="flex items-center gap-3">

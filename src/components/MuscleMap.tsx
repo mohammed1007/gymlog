@@ -7,6 +7,7 @@ const exactMuscleTargets: Record<string, string[]> = {
   // Chest
   'machine-chest-press': ['chest', 'front-delts', 'triceps'],
   'incline-chest-press-machine': ['upper-chest', 'front-delts', 'triceps'],
+  'machine-chest-fly': ['chest', 'upper-chest'],
   'dips': ['chest', 'triceps', 'front-delts'],
   'push-ups': ['chest', 'triceps', 'front-delts'],
   
@@ -17,8 +18,9 @@ const exactMuscleTargets: Record<string, string[]> = {
   'chest-supported-row-machine': ['lats', 'traps', 'rear-delts', 'biceps'],
   'seated-row-machine': ['lats', 'traps', 'rear-delts', 'biceps'],
   'inverted-rows': ['lats', 'traps', 'rear-delts', 'biceps'],
+  'machine-back-extension': ['hamstrings', 'glutes'],
   
-  // Legs (High Precision)
+  // Legs
   'linear-hack-press': ['quads', 'glutes'],
   'hack-squat-machine': ['quads', 'glutes'],
   'leg-press-machine': ['quads', 'glutes'],
@@ -38,10 +40,13 @@ const exactMuscleTargets: Record<string, string[]> = {
   
   // Arms
   'machine-preacher-curl': ['biceps'],
+  'machine-biceps-curl': ['biceps'],
   'triceps-press-machine': ['triceps'],
+  'machine-overhead-triceps-extension': ['triceps'],
   'bench-dips': ['triceps', 'front-delts'],
   
   // Core
+  'ab-crunch-machine': ['abs'],
   'hanging-leg-raises': ['abs'],
   'front-planks': ['abs'],
   'side-planks': ['obliques']
@@ -52,7 +57,6 @@ export default function MuscleMap({ muscleGroup, exerciseId }: MuscleMapProps) {
     ? exactMuscleTargets[exerciseId] 
     : [muscleGroup.toLowerCase()]; 
 
-  // Updated to check multiple muscles for shared SVG shapes
   const isTargeted = (...muscles: string[]) => muscles.some(m => targets.includes(m));
   const getFill = (...muscles: string[]) => isTargeted(...muscles) ? '#a855f7' : 'rgba(255,255,255,0.02)';
   const getStroke = (...muscles: string[]) => isTargeted(...muscles) ? '#d8b4fe' : 'rgba(255,255,255,0.1)';
@@ -72,7 +76,7 @@ export default function MuscleMap({ muscleGroup, exerciseId }: MuscleMapProps) {
         <rect x="35" y="65" width="4" height="30" rx="2" fill={getFill('obliques')} stroke={getStroke('obliques')} strokeWidth="1" />
         <rect x="61" y="65" width="4" height="30" rx="2" fill={getFill('obliques')} stroke={getStroke('obliques')} strokeWidth="1" />
 
-        {/* Delts (Front & Side share this shape visually) */}
+        {/* Delts */}
         <circle cx="30" cy="45" r="7" fill={getFill('front-delts', 'side-delts')} stroke={getStroke('front-delts', 'side-delts')} strokeWidth="1" />
         <circle cx="70" cy="45" r="7" fill={getFill('front-delts', 'side-delts')} stroke={getStroke('front-delts', 'side-delts')} strokeWidth="1" />
 
@@ -104,7 +108,7 @@ export default function MuscleMap({ muscleGroup, exerciseId }: MuscleMapProps) {
         {/* Lats */}
         <path d="M35,45 L50,90 L65,45 Q50,70 35,45 Z" fill={getFill('lats')} stroke={getStroke('lats')} strokeWidth="1" />
 
-        {/* Rear Delts (Rear & Side share this shape visually) */}
+        {/* Rear Delts */}
         <circle cx="30" cy="45" r="7" fill={getFill('rear-delts', 'side-delts')} stroke={getStroke('rear-delts', 'side-delts')} strokeWidth="1" />
         <circle cx="70" cy="45" r="7" fill={getFill('rear-delts', 'side-delts')} stroke={getStroke('rear-delts', 'side-delts')} strokeWidth="1" />
 
