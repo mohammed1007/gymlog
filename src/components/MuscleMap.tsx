@@ -8,6 +8,7 @@ const exactMuscleTargets: Record<string, string[]> = {
   'machine-chest-press': ['chest', 'front-delts', 'triceps'],
   'incline-chest-press-machine': ['upper-chest', 'front-delts', 'triceps'],
   'machine-chest-fly': ['chest', 'upper-chest'],
+  'pec-deck-machine': ['chest', 'front-delts'],
   'dips': ['chest', 'triceps', 'front-delts'],
   'push-ups': ['chest', 'triceps', 'front-delts'],
   

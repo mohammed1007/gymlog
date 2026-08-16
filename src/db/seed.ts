@@ -6,6 +6,7 @@ export async function seedDatabase() {
     { id: 'machine-chest-press', name: 'Machine Chest Press', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 3, minReps: 6, maxReps: 12, progressionType: 'machine', restSeconds: 90, notes: 'Keep shoulder blades retracted and pinned against pad. Do not flare elbows.' },
     { id: 'incline-chest-press-machine', name: 'Incline Chest Press', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 3, minReps: 6, maxReps: 10, progressionType: 'machine', restSeconds: 90, notes: 'Set seat height so handles align with upper chest/clavicle.' },
     { id: 'machine-chest-fly', name: 'Machine Chest Fly', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 2, minReps: 10, maxReps: 15, progressionType: 'machine', restSeconds: 60, notes: 'Keep a slight bend in the elbows. Focus on squeezing the chest at the center.' },
+    { id: 'pec-deck-machine', name: 'Pec Deck Machine', muscleGroup: 'Chest', equipment: 'Machine', defaultSets: 2, minReps: 10, maxReps: 15, progressionType: 'machine', restSeconds: 60, notes: 'Keep chest up and elbows slightly bent. Squeeze at the midline.' },
     { id: 'dips', name: 'Dips (Wide/Chest)', muscleGroup: 'Chest', equipment: 'Bodyweight', defaultSets: 2, minReps: 8, maxReps: 12, progressionType: 'bodyweight', restSeconds: 90, notes: 'Lean forward slightly to bias lower chest. Flare elbows out gently.' },
     { id: 'push-ups', name: 'Push-Ups', muscleGroup: 'Chest', equipment: 'Bodyweight', defaultSets: 3, minReps: 10, maxReps: 25, progressionType: 'bodyweight', restSeconds: 60, notes: 'Core braced tight, full lockout at the top.' },
 
@@ -52,7 +53,6 @@ export async function seedDatabase() {
   
   await db.exercises.bulkPut(masterExercises as any);
 
-  // This will cleanly overwrite your 3 days with the new optimized routine
   await db.routineTemplates.bulkPut([
     {
       dayKey: 'Day A',
@@ -60,12 +60,13 @@ export async function seedDatabase() {
         { exerciseId: 'incline-chest-press-machine', sets: 3 },
         { exerciseId: 'lat-pulldown-machine', sets: 3 },
         { exerciseId: 'chest-supported-row-machine', sets: 3 },
-        { exerciseId: 'shoulder-press-machine', sets: 2 },
         { exerciseId: 'hack-squat-machine', sets: 3 },
         { exerciseId: 'leg-extension-machine', sets: 2 },
+        { exerciseId: 'shoulder-press-machine', sets: 2 },
         { exerciseId: 'lateral-raise-machine', sets: 3 },
-        { exerciseId: 'triceps-press-machine', sets: 2 },
+        { exerciseId: 'pec-deck-machine', sets: 2 },
         { exerciseId: 'machine-preacher-curl', sets: 2 },
+        { exerciseId: 'machine-overhead-triceps-extension', sets: 2 },
         { exerciseId: 'ab-crunch-machine', sets: 3 }
       ]
     },
@@ -74,14 +75,15 @@ export async function seedDatabase() {
       exercises: [
         { exerciseId: 'machine-chest-press', sets: 3 },
         { exerciseId: 'pull-ups', sets: 3 },
-        { exerciseId: 'seated-row-machine', sets: 3 },
-        { exerciseId: 'machine-chest-fly', sets: 2 },
+        { exerciseId: 'chest-supported-row-machine', sets: 3 },
         { exerciseId: 'machine-back-extension', sets: 3 },
         { exerciseId: 'seated-leg-curl', sets: 3 },
+        { exerciseId: 'leg-press-machine', sets: 2 },
         { exerciseId: 'lateral-raise-machine', sets: 3 },
         { exerciseId: 'reverse-pec-deck', sets: 2 },
+        { exerciseId: 'machine-chest-fly', sets: 2 },
         { exerciseId: 'machine-biceps-curl', sets: 2 },
-        { exerciseId: 'machine-overhead-triceps-extension', sets: 2 }
+        { exerciseId: 'triceps-press-machine', sets: 2 }
       ]
     },
     {
@@ -89,15 +91,15 @@ export async function seedDatabase() {
       exercises: [
         { exerciseId: 'machine-chest-press', sets: 3 },
         { exerciseId: 'lat-pulldown-machine', sets: 3 },
-        { exerciseId: 'chest-supported-row-machine', sets: 3 },
-        { exerciseId: 'dips', sets: 2 },
+        { exerciseId: 'seated-row-machine', sets: 3 },
         { exerciseId: 'leg-press-machine', sets: 3 },
         { exerciseId: 'seated-leg-curl', sets: 2 },
+        { exerciseId: 'dips', sets: 2 },
         { exerciseId: 'lateral-raise-machine', sets: 3 },
         { exerciseId: 'reverse-pec-deck', sets: 2 },
+        { exerciseId: 'calf-raise-machine', sets: 3 },
         { exerciseId: 'machine-preacher-curl', sets: 2 },
         { exerciseId: 'triceps-press-machine', sets: 2 },
-        { exerciseId: 'calf-raise-machine', sets: 3 },
         { exerciseId: 'hanging-leg-raises', sets: 3 }
       ]
     }
