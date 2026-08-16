@@ -24,10 +24,7 @@ export default function Workout() {
   const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
   const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
   
-  // Dynamic Set Counter (Bug Fix: Mathematically perfect)
   const currentSet = currentExerciseSets.length + 1;
-
-  // Recovery State
   const [hasSavedSession, setHasSavedSession] = useState<any>(null);
 
   const [completedDays, setCompletedDays] = useState<string[]>(() => {
@@ -47,7 +44,14 @@ export default function Workout() {
     { id: 5, text: 'Shoulder Circles — 10 fwd / 10 bwd', done: false },
   ]);
 
-  // --- 1. GLOBAL TIMER LOGIC ---
+  // Request notifications on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // GLOBAL TIMER
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     let interval: any;
@@ -60,9 +64,9 @@ export default function Workout() {
   const elapsedMs = now - startTime;
   const elapsedMins = Math.floor(elapsedMs / 60000);
   const elapsedSecs = Math.floor((elapsedMs % 60000) / 1000);
-  const isDragging = elapsedMins >= 90; // Over 90 minutes triggers warning
+  const isDragging = elapsedMins >= 90; 
 
-  // --- 2. SESSION RECOVERY / PERSISTENCE ---
+  // SESSION RECOVERY
   useEffect(() => {
     const saved = localStorage.getItem('active_gym_session');
     if (saved && currentState === 'select-day') {
@@ -97,34 +101,9 @@ export default function Workout() {
     setHasSavedSession(null);
   };
 
-  // --- DATA SYNC ---
   useEffect(() => {
     localStorage.setItem('gym_completed_days', JSON.stringify(completedDays));
   }, [completedDays]);
-
-  useEffect(() => {
-    setIsWeighted(false);
-    setShowMuscleMap(false); // Reset muscle map toggle on new exercise
-  }, [currentExerciseIndex]);
-
-  useEffect(() => {
-    if (!pastWorkouts || !storedTemplates) return;
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayLogs = pastWorkouts.filter(log => log.date.startsWith(todayStr));
-    
-    const loggedDayKeys = todayLogs.map(log => {
-      const match = storedTemplates.find(t => log.templateName.includes(t.dayKey));
-      return match ? match.dayKey : null;
-    }).filter((key): key is string => key !== null);
-
-    if (loggedDayKeys.length > 0) {
-      setCompletedDays(prev => {
-        const combined = Array.from(new Set([...prev, ...loggedDayKeys]));
-        if (combined.length !== prev.length) return combined;
-        return prev;
-      });
-    }
-  }, [pastWorkouts, storedTemplates]);
 
   const activeTemplate = storedTemplates?.find(t => t.dayKey === selectedDayKey);
   const routineItems = activeTemplate?.exercises || (activeTemplate as any)?.exerciseIds?.map((id: string) => ({ exerciseId: id, sets: 3 })) || [];
@@ -140,6 +119,29 @@ export default function Workout() {
       }
     }
   }
+
+  const currentExercise = exercises[currentExerciseIndex];
+
+  // --- AUTO-FILL & ALL-TIME MAX LOGIC ---
+  useEffect(() => {
+    setIsWeighted(false);
+    setShowMuscleMap(false);
+    
+    if (currentExercise && pastWorkouts) {
+      let maxHistoricalWeight = 0;
+      pastWorkouts.forEach(log => {
+        const exLog = log.exercises.find(e => e.exerciseId === currentExercise.id);
+        if (exLog && exLog.sets.length > 0) {
+          const sessionMax = Math.max(...exLog.sets.map(s => s.weight));
+          if (sessionMax > maxHistoricalWeight) {
+            maxHistoricalWeight = sessionMax;
+          }
+        }
+      });
+      setWeight(maxHistoricalWeight > 0 ? String(maxHistoricalWeight) : '');
+      setReps('');
+    }
+  }, [currentExerciseIndex, currentExercise?.id, pastWorkouts]);
 
   const toggleWarmup = (id: number) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
@@ -158,7 +160,6 @@ export default function Workout() {
 
   const handleLogSet = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
-    const currentExercise = exercises[currentExerciseIndex];
     if (!currentExercise) return;
 
     const newSet: ExerciseSet = {
@@ -179,7 +180,7 @@ export default function Workout() {
         sets: updatedSets
       }];
       setWorkoutLog(updatedLog);
-      setCurrentExerciseSets([]);
+      setCurrentExerciseSets([]); // STRICT RESET
       
       const nextIncompleteIndex = exercises.findIndex(
         ex => !updatedLog.some(log => log.exerciseId === ex.id)
@@ -192,6 +193,10 @@ export default function Workout() {
         setCurrentState('cooldown');
       }
     }
+  };
+
+  const handleRemoveLoggedSet = (indexToRemove: number) => {
+    setCurrentExerciseSets(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleFinishWorkout = async () => {
@@ -216,7 +221,6 @@ export default function Workout() {
     let perSide = netWeight / 2;
     const plates = [25, 20, 15, 10, 5, 2.5, 1.25];
     const breakdown: { plate: number; count: number }[] = [];
-
     for (const p of plates) {
       if (perSide >= p) {
         const count = Math.floor(perSide / p);
@@ -351,29 +355,41 @@ export default function Workout() {
   );
 
   const renderWorkingSets = () => {
-    const currentExercise = exercises[currentExerciseIndex];
     if (!currentExercise) return null;
     const isBodyweight = currentExercise.progressionType === 'bodyweight';
 
-    let previousPerformance: ExerciseSet[] = [];
+    // Strict Overload Logic: All-time max session
+    let bestPerformance: ExerciseSet[] = [];
+    let maxHistoricalWeight = 0;
+
     if (pastWorkouts) {
-      const lastWorkoutWithExercise = pastWorkouts.find(log => 
-        log.exercises.some(ex => ex.exerciseId === currentExercise.id)
-      );
-      if (lastWorkoutWithExercise) {
-        previousPerformance = lastWorkoutWithExercise.exercises.find(
-          ex => ex.exerciseId === currentExercise.id
-        )?.sets || [];
-      }
+      pastWorkouts.forEach(log => {
+        const exLog = log.exercises.find(e => e.exerciseId === currentExercise.id);
+        if (exLog && exLog.sets.length > 0) {
+          const sessionMaxWeight = Math.max(...exLog.sets.map(s => s.weight));
+          if (sessionMaxWeight > maxHistoricalWeight) {
+            maxHistoricalWeight = sessionMaxWeight;
+            bestPerformance = exLog.sets;
+          } else if (sessionMaxWeight === maxHistoricalWeight) {
+            const currentBestVolume = bestPerformance.reduce((sum, s) => sum + s.reps, 0);
+            const thisSessionVolume = exLog.sets.reduce((sum, s) => sum + s.reps, 0);
+            if (thisSessionVolume > currentBestVolume) {
+              bestPerformance = exLog.sets;
+            }
+          }
+        }
+      });
     }
 
-    const shouldOverload = previousPerformance.some(set => set.reps >= currentExercise.maxReps);
+    // Only prompt to up the weight if they hit MAX REPS across ALL target sets at the SAME WEIGHT.
+    const shouldOverload = bestPerformance.length >= currentExercise.plannedSets &&
+      bestPerformance.every(set => set.weight === maxHistoricalWeight && set.reps >= currentExercise.maxReps);
+
     const plateBreakdown = getPlateBreakdown(Number(weight) || 0);
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 pt-10">
         
-        {/* REVERTED TO PILLS */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
@@ -384,7 +400,7 @@ export default function Workout() {
                 onClick={() => {
                   if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
                   setCurrentExerciseIndex(idx);
-                  setCurrentExerciseSets([]);
+                  setCurrentExerciseSets([]); // Clear sets to prevent bleeding
                 }}
                 className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${isActive ? 'bg-blue-500 border-blue-400 text-white shadow-lg' : isDone ? 'bg-white/5 border-white/5 text-white/30' : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'}`}
               >
@@ -396,14 +412,17 @@ export default function Workout() {
 
         <div className="mb-6">
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
-          <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
+            <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{currentExercise.equipment} • {currentExercise.progressionType}</span>
+          </div>
           
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between mt-3">
             <p className="text-white/50 font-medium text-sm">
               Target: <span className="text-white font-bold">{currentExercise.plannedSets} sets</span> × {currentExercise.minReps}–{currentExercise.maxReps} reps
             </p>
-            <button onClick={() => setShowMuscleMap(!showMuscleMap)} className="flex items-center gap-1.5 text-xs font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1.5 rounded-lg border border-purple-500/20">
-              {showMuscleMap ? <EyeOff size={14}/> : <Eye size={14}/>} {showMuscleMap ? 'Hide Muscles' : 'Target Muscles'}
+            <button onClick={() => setShowMuscleMap(!showMuscleMap)} className="flex items-center gap-1.5 text-xs font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1.5 rounded-lg border border-purple-500/20 transition-all">
+              {showMuscleMap ? <EyeOff size={14}/> : <Eye size={14}/>} {showMuscleMap ? 'Hide Anatomy' : 'Target Muscles'}
             </button>
           </div>
 
@@ -422,12 +441,12 @@ export default function Workout() {
         </div>
 
         <div className="flex-1 space-y-6">
-          {previousPerformance.length > 0 && (
+          {bestPerformance.length > 0 && (
             <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Target size={16} className="text-blue-400" />
-                  <h4 className="text-xs font-bold text-white/70 uppercase tracking-widest">Target to Beat</h4>
+                  <h4 className="text-xs font-bold text-white/70 uppercase tracking-widest">All-Time Best</h4>
                 </div>
                 {shouldOverload && (
                   <span className="flex items-center gap-1.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-amber-500/30 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.2)]">
@@ -436,10 +455,10 @@ export default function Workout() {
                 )}
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
-                {previousPerformance.map((set, idx) => (
-                  <div key={idx} className={`shrink-0 rounded-2xl px-5 py-3 border ${set.reps >= currentExercise.maxReps ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
+                {bestPerformance.map((set, idx) => (
+                  <div key={idx} className={`shrink-0 rounded-2xl px-5 py-3 border ${shouldOverload ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
                     <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Set {idx + 1}</div>
-                    <div className={`font-bold text-lg ${set.reps >= currentExercise.maxReps ? 'text-amber-400' : 'text-white'}`}>
+                    <div className={`font-bold text-lg ${shouldOverload ? 'text-amber-400' : 'text-white'}`}>
                       {set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps}
                     </div>
                   </div>
@@ -452,9 +471,17 @@ export default function Workout() {
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3 ml-2">Today</h4>
               {currentExerciseSets.map((set, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-white/5 rounded-2xl px-5 py-3">
-                  <span className="text-white/50 text-sm font-medium">Set {idx + 1}</span>
-                  <span className="text-white font-bold">{set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps} reps</span>
+                <div key={idx} className="flex justify-between items-center bg-white/5 rounded-2xl px-5 py-3 group relative overflow-hidden">
+                  <div>
+                    <span className="text-white/50 text-sm font-medium mr-4">Set {idx + 1}</span>
+                    <span className="text-white font-bold">{set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps} reps</span>
+                  </div>
+                  <button 
+                    onClick={() => handleRemoveLoggedSet(idx)} 
+                    className="p-2 text-red-400/50 hover:text-red-400 bg-red-500/5 hover:bg-red-500/10 rounded-xl transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -567,9 +594,6 @@ export default function Workout() {
 
   if (!allExercises) return <div className="p-6 text-white/50">Loading workout plans...</div>;
 
-  const currentExercise = exercises[currentExerciseIndex];
-  const dynamicRestSeconds = currentExercise?.restSeconds || 90;
-
   return (
     <div className="p-6 min-h-full flex flex-col overflow-x-hidden">
       {renderGlobalTimer()}
@@ -579,7 +603,7 @@ export default function Workout() {
       {currentState === 'rest' && (
         <div className="flex-1 flex flex-col pt-10">
           <RestTimer 
-            initialSeconds={dynamicRestSeconds} 
+            initialSeconds={currentExercise?.restSeconds || 90} 
             onSkip={() => setCurrentState('working-sets')}
             onComplete={() => setCurrentState('working-sets')}
           />

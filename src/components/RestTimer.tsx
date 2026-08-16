@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Timer, Bell, BellRing, ArrowRight } from 'lucide-react';
+import { Play, FastForward } from 'lucide-react';
 
 interface RestTimerProps {
   initialSeconds: number;
@@ -8,48 +8,38 @@ interface RestTimerProps {
 }
 
 export default function RestTimer({ initialSeconds, onSkip, onComplete }: RestTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(initialSeconds);
+  // Store the absolute end time so background throttling doesn't pause the countdown
   const [endTime] = useState(() => Date.now() + initialSeconds * 1000);
-  const [permission, setPermission] = useState(Notification.permission);
-
-  const requestNotify = () => {
-    if (typeof Notification !== 'undefined') {
-      Notification.requestPermission().then(p => setPermission(p));
-    }
-  };
+  const [timeLeft, setTimeLeft] = useState(initialSeconds);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
-    // Check permission on mount
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      requestNotify();
+    // Request notification permission when timer mounts
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
     }
 
     const interval = setInterval(() => {
-      const now = Date.now();
-      const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+      const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
       setTimeLeft(remaining);
 
-      if (remaining === 0) {
+      if (remaining === 0 && !isCompleted) {
+        setIsCompleted(true);
         clearInterval(interval);
         
-        // Trigger Lock-Screen Notification
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          new Notification('Rest Complete ⚡️', { 
-            body: 'Time to crush your next set!',
-            icon: '/icon.png' // Add your PWA icon here if you have one
-          });
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate([200, 100, 200, 100, 400]);
         }
         
-        // Trigger Haptics
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          navigator.vibrate([200, 100, 200, 100, 200]);
+        // Emoji-free notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification("Rest complete", { body: "Time for your next set." });
         }
-        onComplete();
       }
-    }, 500); // Check twice a second for higher precision when backgrounded
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [endTime, onComplete]);
+  }, [endTime, isCompleted]);
 
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
@@ -57,43 +47,43 @@ export default function RestTimer({ initialSeconds, onSkip, onComplete }: RestTi
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center animate-in zoom-in-95">
-      <div className="relative w-64 h-64 flex items-center justify-center mb-10">
+      <div className="relative w-64 h-64 flex items-center justify-center mb-12">
         <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="48" stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="none" />
+          <circle cx="50" cy="50" r="46" stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="none" />
           <circle 
-            cx="50" cy="50" r="48" 
-            stroke="#60a5fa" strokeWidth="4" fill="none" 
-            strokeDasharray="301.59" 
-            strokeDashoffset={301.59 - (301.59 * progress) / 100} 
+            cx="50" cy="50" r="46" 
+            stroke="#3b82f6" strokeWidth="4" fill="none" 
+            strokeDasharray="289" 
+            strokeDashoffset={289 - (289 * progress) / 100} 
             className="transition-all duration-500 ease-linear"
+            strokeLinecap="round"
           />
         </svg>
         <div className="text-center z-10">
-          <Timer className="mx-auto mb-2 text-blue-400" size={32} />
-          <span className="text-6xl font-bold text-white tabular-nums tracking-tighter">
+          <p className="text-white/50 text-sm font-bold tracking-widest uppercase mb-1">Resting</p>
+          <p className="text-6xl font-bold text-white tabular-nums tracking-tighter">
             {mins}:{secs.toString().padStart(2, '0')}
-          </span>
+          </p>
         </div>
       </div>
 
-      {permission !== 'granted' && typeof Notification !== 'undefined' && (
-        <button onClick={requestNotify} className="mb-8 flex items-center gap-2 text-xs font-bold text-amber-400 bg-amber-400/10 px-4 py-2 rounded-full border border-amber-400/20">
-          <Bell size={14} /> Enable Rest Notifications
-        </button>
-      )}
-
-      {permission === 'granted' && (
-        <p className="mb-8 flex items-center gap-1.5 text-xs font-bold text-blue-400 opacity-50">
-          <BellRing size={12} /> Background Notifications Active
-        </p>
-      )}
-
-      <button 
-        onClick={onSkip}
-        className="bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold text-lg py-5 px-10 rounded-[2rem] flex items-center justify-center gap-2 transition-all"
-      >
-        Skip Rest <ArrowRight size={20} />
-      </button>
+      <div className="w-full max-w-xs space-y-4">
+        {timeLeft === 0 ? (
+          <button 
+            onClick={onComplete}
+            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-5 rounded-3xl flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(59,130,246,0.4)] transition-all"
+          >
+            <Play size={20} className="fill-white" /> Start Next Set
+          </button>
+        ) : (
+          <button 
+            onClick={onSkip}
+            className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-5 rounded-3xl flex items-center justify-center gap-2 transition-all"
+          >
+            <FastForward size={20} /> Skip Rest
+          </button>
+        )}
+      </div>
     </div>
   );
 }
