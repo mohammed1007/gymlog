@@ -288,10 +288,10 @@ export default function Workout() {
             return (
               <div 
                 key={template.dayKey}
-                className={`w-full p-6 rounded-4xlrder transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
+                className={`w-full p-6 rounded-3xl border transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
                   isCompleted 
-                    ? 'bg-white/2 border-white/5 opacity-50' 
-                    : 'bg-white/8 backdrop-blur-xl border-white/10'
+                    ? 'bg-white/5 border-white/5 opacity-50' 
+                    : 'bg-white/10 backdrop-blur-xl border-white/10'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -343,7 +343,7 @@ export default function Workout() {
         ))}
       </div>
       {warmup.every(w => w.done) && (
-        <button onClick={() => setCurrentState('working-sets')} className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold text-lg py-5 rounded-4xl shadow-[0_0_40px_rgba(59,130,246,0.3)] mt-6 transition-all">
+        <button onClick={() => setCurrentState('working-sets')} className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold text-lg py-5 rounded-3xl shadow-[0_0_40px_rgba(59,130,246,0.3)] mt-6 transition-all">
           Begin Workout
         </button>
       )}
@@ -372,6 +372,8 @@ export default function Workout() {
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 pt-10">
+        
+        {/* REVERTED TO PILLS */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
@@ -384,17 +386,9 @@ export default function Workout() {
                   setCurrentExerciseIndex(idx);
                   setCurrentExerciseSets([]);
                 }}
-                className={`snap-center shrink-0 px-4 py-2.5 rounded-[1.25rem] text-left transition-all border ${
-                  isActive ? 'bg-blue-500 border-blue-400 shadow-lg' : isDone ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10 hover:bg-white/20'
-                }`}
+                className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${isActive ? 'bg-blue-500 border-blue-400 text-white shadow-lg' : isDone ? 'bg-white/5 border-white/5 text-white/30' : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'}`}
               >
-                <div className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-blue-200' : 'text-white/40'}`}>
-                  {ex.muscleGroup}
-                </div>
-                <div className={`text-xs font-bold flex items-center gap-1.5 ${isActive ? 'text-white' : 'text-white/70'}`}>
-                  {isDone && <Check size={12} />}
-                  {ex.name}
-                </div>
+                <div className="flex items-center gap-1.5">{isDone && <Check size={12} />}{ex.name}</div>
               </button>
             );
           })}
@@ -415,7 +409,6 @@ export default function Workout() {
 
           {showMuscleMap && (
             <div className="mt-4 bg-black/40 border border-white/5 rounded-3xl p-4 flex justify-center animate-in zoom-in-95">
-              {/* Add the exerciseId prop here! */}
               <MuscleMap muscleGroup={currentExercise.muscleGroup} exerciseId={currentExercise.id} />
             </div>
           )}
@@ -430,7 +423,7 @@ export default function Workout() {
 
         <div className="flex-1 space-y-6">
           {previousPerformance.length > 0 && (
-            <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-lg relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Target size={16} className="text-blue-400" />
@@ -444,7 +437,7 @@ export default function Workout() {
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
                 {previousPerformance.map((set, idx) => (
-                  <div key={idx} className={`shrink-0ded-2xl px-5 py-3 border ${set.reps >= currentExercise.maxReps ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
+                  <div key={idx} className={`shrink-0 rounded-2xl px-5 py-3 border ${set.reps >= currentExercise.maxReps ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
                     <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Set {idx + 1}</div>
                     <div className={`font-bold text-lg ${set.reps >= currentExercise.maxReps ? 'text-amber-400' : 'text-white'}`}>
                       {set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps}
@@ -467,7 +460,7 @@ export default function Workout() {
             </div>
           )}
 
-          <div className="bg-white/8 backdrop-blur-xl border border-white/10 rounded-3xl p-5">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-white font-bold text-lg">Log Set {currentSet} of {currentExercise.plannedSets}</h3>
               <div className="flex items-center gap-2">
@@ -514,13 +507,13 @@ export default function Workout() {
           </div>
         </div>
 
-        <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/30 text-white font-bold text-lg py-5 rounded-4xl flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
+        <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/30 text-white font-bold text-lg py-5 rounded-3xl flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
           <Check size={24} /> Complete Set {currentSet}
         </button>
 
         {showPlateModal && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl p-6 flex flex-col justify-center items-center animate-in fade-in">
-            <div className="bg-white/8 border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
+            <div className="bg-white/10 border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
               <button onClick={() => setShowPlateModal(false)} className="absolute top-5 right-5 text-white/50 hover:text-white"><X size={20} /></button>
               <h3 className="text-xl font-bold text-white mb-1">Plate Breakdown</h3>
               <p className="text-white/50 text-xs mb-6">Per side (Assuming 20kg bar/sled)</p>
@@ -546,14 +539,14 @@ export default function Workout() {
       <h2 className="text-3xl font-bold text-white mb-2 mt-4 tracking-tight">Cool-down</h2>
       <p className="text-white/60 mb-8">Great job. Let's stretch the trained muscles.</p>
       <div className="space-y-4 flex-1">
-        <div className="bg-white/8 backdrop-blur-xl border border-white/10 p-5 rounded-3xl flex justify-between items-center shadow-lg">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/10 p-5 rounded-3xl flex justify-between items-center shadow-lg">
           <div>
             <p className="text-white font-bold text-lg">Doorway Chest Stretch</p>
             <p className="text-white/50 font-medium mt-1">30 sec / side</p>
           </div>
         </div>
       </div>
-      <button onClick={handleFinishWorkout} className="w-full bg-green-500 hover:bg-green-400 text-white font-bold text-lg py-5 rounded-4xl flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all">
+      <button onClick={handleFinishWorkout} className="w-full bg-green-500 hover:bg-green-400 text-white font-bold text-lg py-5 rounded-3xl flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all">
         Finish Workout <ArrowRight size={20} />
       </button>
     </div>
@@ -566,7 +559,7 @@ export default function Workout() {
       </div>
       <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">{selectedDayKey} Complete</h2>
       <p className="text-white/60 mb-10 text-lg">Session saved successfully.</p>
-      <button onClick={() => setCurrentState('select-day')} className="bg-white/10 backdrop-blur-xl border border-white/10 hover:bg-white/15 text-white font-bold text-lg px-10 py-4 rounded-4xl transition-all">
+      <button onClick={() => setCurrentState('select-day')} className="bg-white/10 backdrop-blur-xl border border-white/10 hover:bg-white/20 text-white font-bold text-lg px-10 py-4 rounded-3xl transition-all">
         Done
       </button>
     </div>
