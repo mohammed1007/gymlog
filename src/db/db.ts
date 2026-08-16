@@ -11,7 +11,7 @@ export interface CompletedExercise {
   sets: ExerciseSet[];
 }
 
-export interface CompletedWorkout {
+export interface WorkoutLog {
   id?: number;
   date: string;
   templateName: string;
@@ -19,9 +19,27 @@ export interface CompletedWorkout {
   exercises: CompletedExercise[];
 }
 
+export interface RoutineTemplate {
+  dayKey: string;
+  exercises: { exerciseId: string; sets: number }[];
+}
+
+export interface ExerciseDefinition {
+  id: string;
+  name: string;
+  muscleGroup: string;
+  equipment: string;
+  defaultSets: number;
+  minReps: number;
+  maxReps: number;
+  progressionType: 'machine' | 'bodyweight' | 'dumbbell' | 'barbell';
+  restSeconds: number;
+  notes?: string;
+}
+
 export interface BodyweightLog {
   id?: number;
-  date: string; 
+  date: string;
   weight: number;
 }
 
@@ -30,52 +48,41 @@ export interface HabitDefinition {
   label: string;
 }
 
-export interface DailyHabitsLog {
-  date: string; 
+export interface DailyHabitLog {
+  date: string;
   completedIds: string[];
 }
 
-export interface ExerciseDefinition {
-  id: string;
+// NEW: Schema for tracking frictionless calories
+export interface NutritionLog {
+  id?: number;
+  date: string;
+  timestamp: number;
   name: string;
-  muscleGroup: string;
-  equipment: string;
-  progressionType: 'machine' | 'bodyweight';
-  defaultSets: number;
-  minReps: number;
-  maxReps: number;
-  restSeconds?: number;
-  notes?: string;
-}
-
-export interface RoutineExerciseItem {
-  exerciseId: string;
-  sets: number;
-}
-
-export interface RoutineTemplate {
-  dayKey: string; 
-  exercises: RoutineExerciseItem[]; // Updated to store custom sets per exercise
+  calories: number;
+  protein: number;
 }
 
 export class GymDatabase extends Dexie {
-  workoutLogs!: Table<CompletedWorkout, number>;
-  bodyweightLogs!: Table<BodyweightLog, number>;
-  dailyHabits!: Table<DailyHabitsLog, string>;
-  exercises!: Table<ExerciseDefinition, string>;
+  workoutLogs!: Table<WorkoutLog, number>;
   routineTemplates!: Table<RoutineTemplate, string>;
+  exercises!: Table<ExerciseDefinition, string>;
+  bodyweightLogs!: Table<BodyweightLog, number>;
   habitDefinitions!: Table<HabitDefinition, string>;
+  dailyHabits!: Table<DailyHabitLog, string>;
+  nutritionLogs!: Table<NutritionLog, number>;
 
   constructor() {
     super('GymLogDatabase');
-    // Bumped to version 6 for routine exercise sets structure
-    this.version(6).stores({
-      workoutLogs: '++id, date, templateName',
-      bodyweightLogs: '++id, date',
-      dailyHabits: 'date',
-      exercises: 'id',
+    // Bumped to version 5 to safely inject the new nutritionLogs table
+    this.version(5).stores({
+      workoutLogs: '++id, date',
       routineTemplates: 'dayKey',
-      habitDefinitions: 'id'
+      exercises: 'id, muscleGroup',
+      bodyweightLogs: '++id, date',
+      habitDefinitions: 'id',
+      dailyHabits: 'date',
+      nutritionLogs: '++id, date, timestamp'
     });
   }
 }
