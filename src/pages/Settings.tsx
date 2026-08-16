@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Download, Upload, Server, Calendar, List, ChevronRight, ArrowLeft, Plus, Trash2, X, Minus } from 'lucide-react';
+import { Download, Upload, Server, Calendar, List, ChevronRight, ArrowLeft, Plus, Trash2, X, Minus, FileText } from 'lucide-react';
 import { db } from '../db/db';
 import MuscleMap from '../components/MuscleMap';
 
@@ -63,6 +63,44 @@ export default function Settings() {
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleExportRoutineText = () => {
+    if (!routines || !exercises) return;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(30);
+
+    let text = "🏋️ MY GYM ROUTINE PLAN\n";
+    text += "========================================\n\n";
+
+    routines.forEach(routine => {
+      text += `📅 ${routine.dayKey.toUpperCase()}\n`;
+      text += "----------------------------------------\n";
+
+      const safeItems = getSafeExercises(routine);
+      if (safeItems.length === 0) {
+        text += "No exercises planned.\n";
+      } else {
+        safeItems.forEach((item: any, index: number) => {
+          const ex = exercises.find(e => e.id === item.exerciseId);
+          if (ex) {
+            text += `${index + 1}. ${ex.name} (${ex.equipment})\n`;
+            text += `   Target: ${item.sets} sets × ${ex.minReps}-${ex.maxReps} reps\n`;
+            if (ex.notes) {
+              text += `   💡 Note: ${ex.notes}\n`;
+            }
+          }
+        });
+      }
+      text += "\n";
+    });
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `My_Gym_Routine.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleAddHabit = async () => {
@@ -182,9 +220,15 @@ export default function Settings() {
                   </div>
                 );
               })}
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-6">
                 <input type="text" value={newDayName} onChange={e => setNewDayName(e.target.value)} placeholder="E.g., Day D" className="flex-1 bg-black/20 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-blue-500/50" />
                 <button onClick={handleAddDay} disabled={!newDayName} className="bg-blue-500 disabled:bg-white/10 text-white px-5 rounded-2xl font-bold"><Plus /></button>
+              </div>
+
+              <div className="pt-6 border-t border-white/10">
+                <button onClick={handleExportRoutineText} className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 transition-all">
+                  <FileText size={18} className="text-white/50" /> Export Routine as Text
+                </button>
               </div>
             </>
           ) : (
