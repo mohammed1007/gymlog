@@ -20,7 +20,9 @@ const exactMuscleTargets: Record<string, string[]> = {
   'seated-row-machine': ['lats', 'traps', 'rear-delts', 'biceps'],
   'inverted-rows': ['lats', 'traps', 'rear-delts', 'biceps'],
   'machine-back-extension': ['hamstrings', 'glutes'],
-  
+  'seated-dip-machine': ['chest', 'triceps', 'front-delts'],
+  'underhand-lat-pulldown': ['lats', 'biceps'],
+
   // Legs
   'linear-hack-press': ['quads', 'glutes'],
   'hack-squat-machine': ['quads', 'glutes'],

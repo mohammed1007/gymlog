@@ -40,10 +40,11 @@ export default function Workout() {
   const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
 
   const [warmup, setWarmup] = useState([
-    { id: 1, text: '5 min cardio (Treadmill/Bike)', done: false },
-    { id: 2, text: 'Arm circles — 10 fwd + 10 bwd', done: false },
-    { id: 3, text: 'Band pull-aparts — 15 reps', done: false },
-    { id: 4, text: 'Shoulder rotations — 10/side', done: false },
+    { id: 1, text: 'Arm Swings (Chest/Back stretch) — 15 reps', done: false },
+    { id: 2, text: 'Torso Twists — 10 per side', done: false },
+    { id: 3, text: 'Leg Swings (Front/Back) — 10 per leg', done: false },
+    { id: 4, text: 'Deep Squat Hold (Pry hips) — 30 sec', done: false },
+    { id: 5, text: 'Shoulder Circles — 10 fwd / 10 bwd', done: false },
   ]);
 
   // --- 1. GLOBAL TIMER LOGIC ---
