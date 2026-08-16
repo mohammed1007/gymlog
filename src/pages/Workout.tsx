@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X, Eye, EyeOff, Play, Trash2, Clock, AlertTriangle } from 'lucide-react';
 import RestTimer from '../components/RestTimer';
@@ -15,11 +15,9 @@ export default function Workout() {
   const [showPlateModal, setShowPlateModal] = useState(false);
   const [showMuscleMap, setShowMuscleMap] = useState(false);
   
-  // Input states
   const [reps, setReps] = useState<string>('');
   const [weight, setWeight] = useState<string>(''); 
   
-  // Data tracking
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [currentExerciseSets, setCurrentExerciseSets] = useState<ExerciseSet[]>([]);
   const [workoutLog, setWorkoutLog] = useState<CompletedExercise[]>([]);
@@ -44,14 +42,25 @@ export default function Workout() {
     { id: 5, text: 'Shoulder Circles — 10 fwd / 10 bwd', done: false },
   ]);
 
-  // Request notifications on mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, []);
 
-  // GLOBAL TIMER
+  // Browser Navigation / Popstate Trap
+  useEffect(() => {
+    const handlePopState = () => {
+      if (currentState !== 'select-day' && currentState !== 'summary') {
+        window.history.pushState(null, '', window.location.pathname);
+        setCurrentState('select-day');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentState]);
+
+  // Session Duration Timer
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     let interval: any;
@@ -66,7 +75,7 @@ export default function Workout() {
   const elapsedSecs = Math.floor((elapsedMs % 60000) / 1000);
   const isDragging = elapsedMins >= 90; 
 
-  // SESSION RECOVERY
+  // Session Persistence
   useEffect(() => {
     const saved = localStorage.getItem('active_gym_session');
     if (saved && currentState === 'select-day') {
@@ -120,9 +129,10 @@ export default function Workout() {
     }
   }
 
+  // Single declaration of currentExercise
   const currentExercise = exercises[currentExerciseIndex];
 
-  // --- AUTO-FILL & ALL-TIME MAX LOGIC ---
+  // Auto-Fill & History Lookup
   useEffect(() => {
     setIsWeighted(false);
     setShowMuscleMap(false);
@@ -180,7 +190,7 @@ export default function Workout() {
         sets: updatedSets
       }];
       setWorkoutLog(updatedLog);
-      setCurrentExerciseSets([]); // STRICT RESET
+      setCurrentExerciseSets([]); 
       
       const nextIncompleteIndex = exercises.findIndex(
         ex => !updatedLog.some(log => log.exerciseId === ex.id)
@@ -358,7 +368,6 @@ export default function Workout() {
     if (!currentExercise) return null;
     const isBodyweight = currentExercise.progressionType === 'bodyweight';
 
-    // Strict Overload Logic: All-time max session
     let bestPerformance: ExerciseSet[] = [];
     let maxHistoricalWeight = 0;
 
@@ -381,7 +390,6 @@ export default function Workout() {
       });
     }
 
-    // Only prompt to up the weight if they hit MAX REPS across ALL target sets at the SAME WEIGHT.
     const shouldOverload = bestPerformance.length >= currentExercise.plannedSets &&
       bestPerformance.every(set => set.weight === maxHistoricalWeight && set.reps >= currentExercise.maxReps);
 
@@ -389,7 +397,6 @@ export default function Workout() {
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 pt-10">
-        
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
@@ -400,7 +407,7 @@ export default function Workout() {
                 onClick={() => {
                   if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
                   setCurrentExerciseIndex(idx);
-                  setCurrentExerciseSets([]); // Clear sets to prevent bleeding
+                  setCurrentExerciseSets([]);
                 }}
                 className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${isActive ? 'bg-blue-500 border-blue-400 text-white shadow-lg' : isDone ? 'bg-white/5 border-white/5 text-white/30' : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'}`}
               >
@@ -512,7 +519,7 @@ export default function Workout() {
                     type="text" 
                     inputMode="decimal"
                     value={weight} 
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWeight(e.target.value)} 
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setWeight(e.target.value)} 
                     className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/25" 
                     placeholder="0" 
                   />
@@ -525,7 +532,7 @@ export default function Workout() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={reps} 
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReps(e.target.value)} 
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setReps(e.target.value)} 
                   className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-white/25" 
                   placeholder="0" 
                 />

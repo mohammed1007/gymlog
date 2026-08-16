@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Download, Upload, Server, Calendar, List, ChevronRight, ArrowLeft, Plus, Trash2, X, Minus, FileText } from 'lucide-react';
 import { db } from '../db/db';
@@ -19,7 +19,19 @@ export default function Settings() {
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
 
-  // Safely handle legacy databases where exercises was an array of strings
+  // --- THE HARDWARE BACK-BUTTON FIX ---
+  useEffect(() => {
+    const handlePopState = () => {
+      if (view !== 'main') {
+        // Intercept the back swipe, lock the URL, and gently return to the main settings view
+        window.history.pushState(null, '', window.location.pathname);
+        setView('main');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [view]);
+
   const getSafeExercises = (routine: any) => {
     if (!routine) return [];
     if (routine.exercises) return routine.exercises;
@@ -169,7 +181,7 @@ export default function Settings() {
         </header>
 
         <div className="space-y-3">
-          <button onClick={() => setView('routines')} className="w-full bg-white/6drop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95">
+          <button onClick={() => setView('routines')} className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95 hover:bg-white/10">
             <div className="flex items-center gap-4">
               <div className="bg-black/20 p-3 rounded-xl border border-white/5"><Calendar size={20} className="text-blue-400" /></div>
               <div className="text-left"><h3 className="text-white font-bold">Manage Routines</h3><p className="text-white/50 text-xs">Add days, swap exercises & sets.</p></div>
@@ -177,7 +189,7 @@ export default function Settings() {
             <ChevronRight className="text-white/30" />
           </button>
 
-          <button onClick={() => setView('habits')} className="w-full bg-white/6 backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95">
+          <button onClick={() => setView('habits')} className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95 hover:bg-white/10">
             <div className="flex items-center gap-4">
               <div className="bg-black/20 p-3 rounded-xl border border-white/5"><List size={20} className="text-amber-400" /></div>
               <div className="text-left"><h3 className="text-white font-bold">Daily Protocol</h3><p className="text-white/50 text-xs">Edit your checklist.</p></div>
@@ -185,7 +197,7 @@ export default function Settings() {
             <ChevronRight className="text-white/30" />
           </button>
 
-          <button onClick={() => setView('data')} className="w-full bg-white/6 backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95">
+          <button onClick={() => setView('data')} className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95 hover:bg-white/10">
             <div className="flex items-center gap-4">
               <div className="bg-black/20 p-3 rounded-xl border border-white/5"><Server size={20} className="text-purple-400" /></div>
               <div className="text-left"><h3 className="text-white font-bold">Data Sync</h3><p className="text-white/50 text-xs">Export & Import backups.</p></div>

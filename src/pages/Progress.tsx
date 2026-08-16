@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { TrendingUp, Dumbbell, Flame, Scale, Plus, CheckSquare, Square, Target, Award, Calendar as CalendarIcon, Activity } from 'lucide-react';
+import { TrendingUp, Dumbbell, Flame, Scale, Plus, CheckSquare, Square, Target, Award, Calendar as CalendarIcon, Activity, Trophy, Lock, CheckCircle2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar } from 'recharts';
 import { db } from '../db/db';
 
@@ -19,7 +19,7 @@ export default function Progress() {
     return <div className="p-6 text-white/50">Loading metrics...</div>;
   }
 
-  // Calculate volume progression
+  let totalVolumeAllTime = 0;
   const volumeHistory = pastWorkouts.map(log => {
     let vol = 0;
     log.exercises.forEach(ex => {
@@ -28,6 +28,7 @@ export default function Progress() {
         vol += (set.reps * weightToUse);
       });
     });
+    totalVolumeAllTime += vol;
     return {
       date: new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       volume: vol
@@ -85,10 +86,74 @@ export default function Progress() {
     return highest1RM;
   };
 
+  const chest1RM = getEstimatedMax1RM('machine-chest-press') || getEstimatedMax1RM('incline-chest-press-machine');
+  const lat1RM = getEstimatedMax1RM('lat-pulldown-machine') || getEstimatedMax1RM('underhand-lat-pulldown');
+  const leg1RM = getEstimatedMax1RM('hack-squat-machine') || getEstimatedMax1RM('linear-hack-press') || getEstimatedMax1RM('leg-press-machine');
+
   const keyLifts = [
     { name: 'Machine Chest Press', max: getMaxWeight('machine-chest-press'), est1RM: getEstimatedMax1RM('machine-chest-press') },
-    { name: 'Linear Hack Press', max: getMaxWeight('linear-hack-press'), est1RM: getEstimatedMax1RM('linear-hack-press') },
+    { name: 'Hack Squat', max: getMaxWeight('hack-squat-machine'), est1RM: getEstimatedMax1RM('hack-squat-machine') },
     { name: 'Lat Pulldown', max: getMaxWeight('lat-pulldown-machine'), est1RM: getEstimatedMax1RM('lat-pulldown-machine') },
+  ];
+
+  // Dynamic Milestones / Trophy Room
+  const trophies = [
+    {
+      title: "Chest Press: 60kg Club",
+      current: chest1RM,
+      target: 60,
+      unit: "kg",
+      category: "Upper Push",
+      unlocked: chest1RM >= 60
+    },
+    {
+      title: "Chest Press: 80kg Club",
+      current: chest1RM,
+      target: 80,
+      unit: "kg",
+      category: "Upper Push",
+      unlocked: chest1RM >= 80
+    },
+    {
+      title: "Lat Pulldown: 55kg Club",
+      current: lat1RM,
+      target: 55,
+      unit: "kg",
+      category: "V-Taper",
+      unlocked: lat1RM >= 55
+    },
+    {
+      title: "Lat Pulldown: 75kg Club",
+      current: lat1RM,
+      target: 75,
+      unit: "kg",
+      category: "V-Taper",
+      unlocked: lat1RM >= 75
+    },
+    {
+      title: "Leg Titan: 100kg+ Press",
+      current: leg1RM,
+      target: 100,
+      unit: "kg",
+      category: "Lower Power",
+      unlocked: leg1RM >= 100
+    },
+    {
+      title: "10 Sessions Logged",
+      current: pastWorkouts.length,
+      target: 10,
+      unit: "sessions",
+      category: "Consistency",
+      unlocked: pastWorkouts.length >= 10
+    },
+    {
+      title: "Iron Mover: 25,000kg Volume",
+      current: totalVolumeAllTime,
+      target: 25000,
+      unit: "kg",
+      category: "Work Capacity",
+      unlocked: totalVolumeAllTime >= 25000
+    }
   ];
 
   const generateHeatmapDays = () => {
@@ -153,7 +218,7 @@ export default function Progress() {
 
       {/* 1. Daily Protocol */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Flame className="text-amber-400" size={20}/> Daily Protocol</h2>
-      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 space-y-3">
         {allHabits?.map(habit => {
           const isDone = todayHabitsLog?.completedIds.includes(habit.id);
           return (
@@ -168,7 +233,7 @@ export default function Progress() {
 
       {/* 2. Mass Tracker */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Scale className="text-purple-400" size={20}/> Mass Tracker</h2>
-      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-6">
         <div className="flex gap-3">
           <div className="flex-1 bg-black/20 rounded-2xl p-3 border border-white/5">
             <label className="block text-[10px] text-white/50 font-bold mb-1 uppercase tracking-wider">Morning Weight (kg)</label>
@@ -190,9 +255,56 @@ export default function Progress() {
         )}
       </div>
 
-      {/* 3. Training Balance */}
+      {/* 3. Trophy Room & Milestones */}
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Trophy className="text-amber-400" size={20}/> 1RM Trophy Room</h2>
+      <div className="grid grid-cols-1 gap-3 mb-8">
+        {trophies.map((t, idx) => {
+          const pct = Math.min(100, Math.round((t.current / t.target) * 100));
+          return (
+            <div 
+              key={idx} 
+              className={`p-4 rounded-2xl border transition-all ${
+                t.unlocked 
+                  ? 'bg-amber-500/10 border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]' 
+                  : 'bg-white/5 border-white/5 opacity-60'
+              }`}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl ${t.unlocked ? 'bg-amber-500/20 text-amber-400' : 'bg-black/30 text-white/30'}`}>
+                    {t.unlocked ? <Trophy size={16} /> : <Lock size={16} />}
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm leading-tight">{t.title}</h3>
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{t.category}</span>
+                  </div>
+                </div>
+                <div>
+                  {t.unlocked ? (
+                    <span className="flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-lg">
+                      <CheckCircle2 size={12} /> Unlocked
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-white/50 tabular-nums">
+                      {t.current} / {t.target} {t.unit}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {!t.unlocked && (
+                <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden mt-2">
+                  <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 4. Training Balance */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Target className="text-blue-400" size={20}/> Training Balance</h2>
-      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 flex flex-col gap-2">
         <p className="text-white/50 text-xs mb-2">Total working sets per muscle group.</p>
         {pastWorkouts.length > 0 ? (
           <div className="h-56 w-full -ml-2">
@@ -212,9 +324,9 @@ export default function Progress() {
         )}
       </div>
 
-      {/* 4. Consistency Heatmap */}
+      {/* 5. Consistency Heatmap */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><CalendarIcon className="text-green-400" size={20}/> Consistency Heatmap</h2>
-      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
         <p className="text-white/50 text-xs mb-4">Gym attendance over the past 12 weeks.</p>
         <div className="grid grid-cols-12 gap-1.5 justify-items-center">
           {heatmapDays.map((day, idx) => (
@@ -227,9 +339,9 @@ export default function Progress() {
         </div>
       </div>
 
-      {/* 5. Volume Progression */}
+      {/* 6. Volume Progression */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Activity className="text-amber-400" size={20}/> Volume Progression</h2>
-      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8">
         <p className="text-white/50 text-xs mb-4">Total kg moved per session over time.</p>
         {volumeHistory.length > 0 ? (
           <div className="h-48 w-full mt-2">
@@ -249,9 +361,9 @@ export default function Progress() {
         )}
       </div>
 
-      {/* 6. All-Time Max Lifts */}
+      {/* 7. Max Lifts */}
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="text-green-400" size={20}/> All-Time Max Lifts & Estimated 1RM</h2>
-      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 space-y-5">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 space-y-5">
         {keyLifts.map((lift, i) => (
           <div key={i} className="flex justify-between items-center group border-b border-white/5 pb-4 last:border-0 last:pb-0">
             <div className="flex items-center gap-3">
