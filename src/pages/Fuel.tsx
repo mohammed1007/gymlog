@@ -156,7 +156,7 @@ export default function Fuel() {
       </header>
 
       {/* Progress Ring & 7-Day Streak */}
-      <div className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div className="flex flex-col items-center">
           <div className="relative w-40 h-40 flex items-center justify-center mb-4">
             <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -220,7 +220,7 @@ export default function Fuel() {
           <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3 ml-2">Today's Entries</h2>
           <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
             {todaysLogs.map(log => (
-              <div key={log.id} className="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-4">
+              <div key={log.id} className="shrink-0 bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-4">
                 <div>
                   <p className="text-white font-bold text-sm">{log.name}</p>
                   <p className="text-white/40 text-xs">{log.calories} kcal • {log.protein}g pro</p>

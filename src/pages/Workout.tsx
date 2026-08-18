@@ -1,11 +1,11 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X, Eye, EyeOff, Play, Trash2, Clock, AlertTriangle } from 'lucide-react';
+import { CheckSquare, Square, Check, ArrowRight, RotateCcw, Target, Zap, Info, Calculator, X, Eye, EyeOff, Play, Trash2, Clock, AlertTriangle, ArrowRightLeft, Plus } from 'lucide-react';
 import RestTimer from '../components/RestTimer';
 import MuscleMap from '../components/MuscleMap';
 import { db, type ExerciseSet, type CompletedExercise, type ExerciseDefinition } from '../db/db';
 
-type WorkoutState = 'select-day' | 'general-warmup' | 'working-sets' | 'rest' | 'cooldown' | 'summary';
+type WorkoutState = 'select-day' | 'general-warmup' | 'working-sets' | 'rest' | 'exercise-complete' | 'cooldown' | 'summary';
 
 export default function Workout() {
   const [currentState, setCurrentState] = useState<WorkoutState>('select-day');
@@ -15,6 +15,10 @@ export default function Workout() {
   const [showPlateModal, setShowPlateModal] = useState(false);
   const [showMuscleMap, setShowMuscleMap] = useState(false);
   
+  // Mid-Workout Swapping State
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'add' | 'swap'>('add');
+
   const [reps, setReps] = useState<string>('');
   const [weight, setWeight] = useState<string>(''); 
   
@@ -129,7 +133,6 @@ export default function Workout() {
     }
   }
 
-  // Single declaration of currentExercise
   const currentExercise = exercises[currentExerciseIndex];
 
   // Auto-Fill & History Lookup
@@ -168,6 +171,29 @@ export default function Workout() {
     setCurrentState('general-warmup');
   };
 
+  // --- MID WORKOUT ALTERATIONS ---
+  const handleSelectNewExercise = async (newExerciseId: string) => {
+    if (!activeTemplate) return;
+    const exerciseDef = allExercises?.find(e => e.id === newExerciseId);
+    const defaultSets = exerciseDef?.defaultSets || 3;
+    
+    const updatedItems = [...routineItems];
+
+    if (pickerMode === 'swap') {
+      updatedItems[currentExerciseIndex] = { exerciseId: newExerciseId, sets: defaultSets };
+      setCurrentExerciseSets([]); 
+    } else {
+      updatedItems.push({ exerciseId: newExerciseId, sets: defaultSets });
+    }
+
+    await db.routineTemplates.put({
+      dayKey: selectedDayKey,
+      exercises: updatedItems
+    });
+
+    setShowExercisePicker(false);
+  };
+
   const handleLogSet = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
     if (!currentExercise) return;
@@ -192,16 +218,21 @@ export default function Workout() {
       setWorkoutLog(updatedLog);
       setCurrentExerciseSets([]); 
       
-      const nextIncompleteIndex = exercises.findIndex(
-        ex => !updatedLog.some(log => log.exerciseId === ex.id)
-      );
+      // Trigger Visual Confirmation
+      setCurrentState('exercise-complete');
+    }
+  };
 
-      if (nextIncompleteIndex !== -1) {
-        setCurrentExerciseIndex(nextIncompleteIndex);
-        setCurrentState('working-sets');
-      } else {
-        setCurrentState('cooldown');
-      }
+  const advanceFromCompletion = () => {
+    const nextIncompleteIndex = exercises.findIndex(
+      ex => !workoutLog.some(log => log.exerciseId === ex.id)
+    );
+
+    if (nextIncompleteIndex !== -1) {
+      setCurrentExerciseIndex(nextIncompleteIndex);
+      setCurrentState('working-sets');
+    } else {
+      setCurrentState('cooldown');
     }
   };
 
@@ -397,6 +428,8 @@ export default function Workout() {
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 pt-10">
+        
+        {/* BIG PILLS ARE BACK */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
@@ -409,9 +442,17 @@ export default function Workout() {
                   setCurrentExerciseIndex(idx);
                   setCurrentExerciseSets([]);
                 }}
-                className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${isActive ? 'bg-blue-500 border-blue-400 text-white shadow-lg' : isDone ? 'bg-white/5 border-white/5 text-white/30' : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'}`}
+                className={`snap-center shrink-0 px-4 py-2.5 rounded-[1.25rem] text-left transition-all border ${
+                  isActive ? 'bg-blue-500 border-blue-400 shadow-lg' : isDone ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10 hover:bg-white/20'
+                }`}
               >
-                <div className="flex items-center gap-1.5">{isDone && <Check size={12} />}{ex.name}</div>
+                <div className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-blue-200' : 'text-white/40'}`}>
+                  {ex.muscleGroup}
+                </div>
+                <div className={`text-xs font-bold flex items-center gap-1.5 ${isActive ? 'text-white' : 'text-white/70'}`}>
+                  {isDone && <Check size={12} />}
+                  {ex.name}
+                </div>
               </button>
             );
           })}
@@ -424,6 +465,16 @@ export default function Workout() {
             <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{currentExercise.equipment} • {currentExercise.progressionType}</span>
           </div>
           
+          {/* MID-WORKOUT ALTERATION BUTTONS */}
+          <div className="flex items-center gap-2 mt-4 mb-2">
+            <button onClick={() => { setPickerMode('swap'); setShowExercisePicker(true); }} className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+              <ArrowRightLeft size={14}/> Swap Machine
+            </button>
+            <button onClick={() => { setPickerMode('add'); setShowExercisePicker(true); }} className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+              <Plus size={14}/> Add to Routine
+            </button>
+          </div>
+
           <div className="flex items-center justify-between mt-3">
             <p className="text-white/50 font-medium text-sm">
               Target: <span className="text-white font-bold">{currentExercise.plannedSets} sets</span> × {currentExercise.minReps}–{currentExercise.maxReps} reps
@@ -545,6 +596,42 @@ export default function Workout() {
           <Check size={24} /> Complete Set {currentSet}
         </button>
 
+        {showExercisePicker && (
+          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col pb-safe">
+            <div className="flex justify-between items-center mb-6 mt-4">
+              <h3 className="text-xl font-bold text-white">
+                {pickerMode === 'swap' ? 'Swap Machine' : 'Add Machine'}
+              </h3>
+              <button onClick={() => setShowExercisePicker(false)} className="p-3 bg-white/10 rounded-full"><X size={20} className="text-white" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 hide-scrollbar pb-36">
+              {allExercises?.map(ex => {
+                const isAdded = exercises.some(e => e.id === ex.id);
+                return (
+                  <button 
+                    key={ex.id}
+                    disabled={isAdded && pickerMode === 'add'} 
+                    onClick={() => handleSelectNewExercise(ex.id)}
+                    className={`w-full flex justify-between items-center p-3 rounded-2xl border transition-all ${
+                      isAdded && pickerMode === 'add' ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 text-left">
+                      <div className="bg-black/40 rounded-xl p-1 border border-white/5">
+                        <MuscleMap muscleGroup={ex.muscleGroup} exerciseId={ex.id} />
+                      </div>
+                      <div>
+                        <p className="text-white font-bold text-lg">{ex.name}</p>
+                        <p className="text-blue-400/80 font-medium text-xs tracking-widest uppercase">{ex.muscleGroup}</p>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {showPlateModal && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl p-6 flex flex-col justify-center items-center animate-in fade-in">
             <div className="bg-white/10 border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
@@ -567,6 +654,23 @@ export default function Workout() {
       </div>
     );
   };
+
+  const renderExerciseComplete = () => (
+    <div className="flex-1 flex flex-col items-center justify-center animate-in zoom-in-95 text-center px-6 pt-10">
+      <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30 shadow-[0_0_40px_rgba(34,197,94,0.3)]">
+        <Check className="text-green-400" size={48} />
+      </div>
+      <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Machine Complete</h2>
+      <p className="text-white/60 mb-10 text-lg">Great job on the {exercises[currentExerciseIndex]?.name}!</p>
+      
+      <button 
+        onClick={advanceFromCompletion} 
+        className="w-full max-w-xs bg-blue-500 hover:bg-blue-400 text-white font-bold text-lg py-4 rounded-3xl transition-all shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+      >
+        Continue Workout
+      </button>
+    </div>
+  );
 
   const renderCooldown = () => (
     <div className="flex-1 flex flex-col animate-in fade-in pt-10">
@@ -601,16 +705,19 @@ export default function Workout() {
 
   if (!allExercises) return <div className="p-6 text-white/50">Loading workout plans...</div>;
 
+  const dynamicRestSeconds = currentExercise?.restSeconds || 90;
+
   return (
     <div className="p-6 min-h-full flex flex-col overflow-x-hidden">
       {renderGlobalTimer()}
       {currentState === 'select-day' && renderDaySelection()}
       {currentState === 'general-warmup' && renderGeneralWarmup()}
       {currentState === 'working-sets' && renderWorkingSets()}
+      {currentState === 'exercise-complete' && renderExerciseComplete()}
       {currentState === 'rest' && (
         <div className="flex-1 flex flex-col pt-10">
           <RestTimer 
-            initialSeconds={currentExercise?.restSeconds || 90} 
+            initialSeconds={dynamicRestSeconds} 
             onSkip={() => setCurrentState('working-sets')}
             onComplete={() => setCurrentState('working-sets')}
           />
