@@ -61,7 +61,7 @@ export default function History() {
             return (
               <div 
                 key={workoutId} 
-                className="bg-white/[0.06] backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden transition-all shadow-lg"
+                className="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden transition-all shadow-lg"
               >
                 {/* Header Summary */}
                 <div 
