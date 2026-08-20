@@ -196,7 +196,7 @@ export default function Fuel() {
                       style={{ height: `${heightPct}%` }}
                     />
                   </div>
-                  <span className={`text-[9px] font-bold ${idx === 6 ? 'text-white' : 'text-white/40'}`}>{day.label}</span>
+                  <span className={`text-[9px] font-bold ${idx === 6 ? 'text-white' : 'text-white/60'}`}>{day.label}</span>
                 </div>
               );
             })}
@@ -223,9 +223,9 @@ export default function Fuel() {
               <div key={log.id} className="shrink-0 bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-4">
                 <div>
                   <p className="text-white font-bold text-sm">{log.name}</p>
-                  <p className="text-white/40 text-xs">{log.calories} kcal • {log.protein}g pro</p>
+                  <p className="text-white/60 text-xs">{log.calories} kcal • {log.protein}g pro</p>
                 </div>
-                <button onClick={() => handleDeleteLog(log.id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all">
+                <button aria-label="Delete entry" onClick={() => handleDeleteLog(log.id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -242,7 +242,7 @@ export default function Fuel() {
               {group.icon}
               <h2 className="text-xl font-bold text-white">{group.title}</h2>
             </div>
-            <p className="text-white/40 text-xs mb-4 ml-1">{group.description}</p>
+            <p className="text-white/60 text-xs mb-4 ml-1">{group.description}</p>
             
             <div className="grid grid-cols-2 gap-3">
               {group.items.map((item, iIdx) => (
@@ -257,7 +257,7 @@ export default function Fuel() {
                     <span className="text-amber-400">{item.cal} kcal</span>
                     <span className="text-blue-400">{item.pro}g pro</span>
                   </div>
-                  <div className="absolute right-3 top-3 p-1.5 bg-white/5 rounded-full group-hover:bg-amber-500 group-hover:text-white text-white/30 transition-colors">
+                  <div className="absolute right-3 top-3 p-1.5 bg-white/5 rounded-full group-hover:bg-amber-500 group-hover:text-white text-white/50 transition-colors">
                     <Plus size={14} />
                   </div>
                 </button>
@@ -273,7 +273,7 @@ export default function Fuel() {
           <div className="bg-[#1c1c1e] w-full rounded-t-[2.5rem] p-6 pb-safe border-t border-white/10 flex flex-col max-h-[85vh]">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-white flex items-center gap-2"><Beaker size={24} className="text-blue-400" /> Build a Mix</h3>
-              <button onClick={() => setShowMixer(false)} className="p-2 bg-white/10 rounded-full text-white/50 hover:text-white"><X size={20} /></button>
+              <button aria-label="Close" onClick={() => setShowMixer(false)} className="p-2 bg-white/10 rounded-full text-white/50 hover:text-white"><X size={20} /></button>
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-3 hide-scrollbar pb-6">
@@ -285,7 +285,7 @@ export default function Fuel() {
                       <span className="text-2xl">{item.icon}</span>
                       <div>
                         <p className="text-white font-bold text-sm">{item.name}</p>
-                        <p className="text-white/40 text-xs">{item.cal} kcal • {item.pro}g pro</p>
+                        <p className="text-white/60 text-xs">{item.cal} kcal • {item.pro}g pro</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 bg-black/40 rounded-xl border border-white/5 p-1">
@@ -302,7 +302,7 @@ export default function Fuel() {
               <div className="flex justify-between items-end mb-4 px-2">
                 <div>
                   <p className="text-white/50 text-xs font-bold uppercase tracking-widest">Total Mix</p>
-                  <p className="text-3xl font-bold text-amber-400">{currentMixCal} <span className="text-lg text-white/40">kcal</span></p>
+                  <p className="text-3xl font-bold text-amber-400">{currentMixCal} <span className="text-lg text-white/60">kcal</span></p>
                 </div>
                 <div className="text-right">
                   <p className="text-white/50 text-xs font-bold uppercase tracking-widest">Protein</p>
@@ -312,7 +312,7 @@ export default function Fuel() {
               <button 
                 disabled={currentMixCal === 0}
                 onClick={handleLogMix} 
-                className="w-full bg-blue-500 disabled:bg-white/10 disabled:text-white/30 text-white font-bold py-5 rounded-2xl transition-all flex justify-center items-center gap-2"
+                className="w-full bg-blue-500 disabled:bg-white/10 disabled:text-white/50 text-white font-bold py-5 rounded-2xl transition-all flex justify-center items-center gap-2"
               >
                 <Zap size={20} /> Log Custom Mix
               </button>
@@ -325,7 +325,7 @@ export default function Fuel() {
       {showQuickAdd && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col justify-center items-center animate-in fade-in p-6">
           <div className="bg-[#1c1c1e] border border-white/10 rounded-[2.5rem] p-6 w-full max-w-sm relative shadow-2xl">
-            <button onClick={() => setShowQuickAdd(false)} className="absolute top-6 right-6 text-white/50 hover:text-white"><X size={20} /></button>
+            <button aria-label="Close" onClick={() => setShowQuickAdd(false)} className="absolute top-6 right-6 text-white/50 hover:text-white"><X size={20} /></button>
             <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2"><Calculator size={24} className="text-amber-400" /> Quick Add</h3>
             <p className="text-white/50 text-sm mb-6">Enter raw macros for a random meal.</p>
             
@@ -358,7 +358,7 @@ export default function Fuel() {
             <button 
               disabled={!quickCal}
               onClick={handleLogQuickAdd} 
-              className="w-full bg-amber-500 disabled:bg-white/10 disabled:text-white/30 text-white font-bold py-4 rounded-2xl transition-all"
+              className="w-full bg-amber-500 disabled:bg-white/10 disabled:text-white/50 text-white font-bold py-4 rounded-2xl transition-all"
             >
               Add Fuel
             </button>

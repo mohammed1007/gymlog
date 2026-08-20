@@ -50,7 +50,7 @@ export default function History() {
 
       {pastWorkouts.length === 0 ? (
         <div className="flex-1 flex items-center justify-center border border-dashed border-white/10 rounded-3xl p-6">
-          <p className="text-white/30 text-center text-sm">No workouts recorded yet.<br/>Go crush a session!</p>
+          <p className="text-white/50 text-center text-sm">No workouts recorded yet.<br/>Go crush a session!</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -107,9 +107,9 @@ export default function History() {
                           <div className="space-y-2 pl-6 border-l-2 border-white/5 ml-1.5">
                             {ex.sets.map((set, setIdx) => (
                               <div key={setIdx} className="flex justify-between items-center text-xs">
-                                <span className="text-white/40 font-bold uppercase tracking-widest text-[10px]">Set {setIdx + 1}</span>
+                                <span className="text-white/60 font-bold uppercase tracking-widest text-[10px]">Set {setIdx + 1}</span>
                                 <span className="text-white font-bold tabular-nums text-sm">
-                                  {set.weight > 0 ? `${set.weight} kg × ` : ''}{set.reps} <span className="text-white/40 text-[10px] uppercase">reps</span>
+                                  {set.weight > 0 ? `${set.weight} kg × ` : ''}{set.reps} <span className="text-white/60 text-[10px] uppercase">reps</span>
                                 </span>
                               </div>
                             ))}

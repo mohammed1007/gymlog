@@ -186,7 +186,7 @@ export default function Settings() {
               <div className="bg-black/20 p-3 rounded-xl border border-white/5"><Calendar size={20} className="text-blue-400" /></div>
               <div className="text-left"><h3 className="text-white font-bold">Manage Routines</h3><p className="text-white/50 text-xs">Add days, swap exercises & sets.</p></div>
             </div>
-            <ChevronRight className="text-white/30" />
+            <ChevronRight className="text-white/50" />
           </button>
 
           <button onClick={() => setView('habits')} className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95 hover:bg-white/10">
@@ -194,7 +194,7 @@ export default function Settings() {
               <div className="bg-black/20 p-3 rounded-xl border border-white/5"><List size={20} className="text-amber-400" /></div>
               <div className="text-left"><h3 className="text-white font-bold">Daily Protocol</h3><p className="text-white/50 text-xs">Edit your checklist.</p></div>
             </div>
-            <ChevronRight className="text-white/30" />
+            <ChevronRight className="text-white/50" />
           </button>
 
           <button onClick={() => setView('data')} className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 p-5 rounded-3xl flex items-center justify-between transition-all active:scale-95 hover:bg-white/10">
@@ -202,7 +202,7 @@ export default function Settings() {
               <div className="bg-black/20 p-3 rounded-xl border border-white/5"><Server size={20} className="text-purple-400" /></div>
               <div className="text-left"><h3 className="text-white font-bold">Data Sync</h3><p className="text-white/50 text-xs">Export & Import backups.</p></div>
             </div>
-            <ChevronRight className="text-white/30" />
+            <ChevronRight className="text-white/50" />
           </button>
         </div>
       </div>
@@ -263,7 +263,7 @@ export default function Settings() {
                       <div key={item.exerciseId} className="flex justify-between items-center bg-black/20 border border-white/5 p-4 rounded-2xl">
                         <div>
                           <span className="text-white font-medium block">{ex?.name || item.exerciseId}</span>
-                          <span className="text-white/40 text-xs">{item.sets} sets planned</span>
+                          <span className="text-white/60 text-xs">{item.sets} sets planned</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
@@ -340,7 +340,7 @@ export default function Settings() {
                     <div>
                       <p className="text-white font-bold text-lg">{ex.name}</p>
                       <p className="text-blue-400/80 font-medium text-xs tracking-widest uppercase">{ex.muscleGroup}</p>
-                      <p className="text-white/40 text-[10px] mt-0.5">{ex.equipment}</p>
+                      <p className="text-white/60 text-[10px] mt-0.5">{ex.equipment}</p>
                     </div>
                   </div>
                   

@@ -382,8 +382,8 @@ export default function Workout() {
             onClick={() => toggleWarmup(item.id)}
             className={`flex items-center gap-4 w-full text-left p-5 rounded-3xl border transition-all duration-300 ${item.done ? 'bg-white/5 border-white/5' : 'bg-white/10 backdrop-blur-xl border-white/10 shadow-lg'}`}
           >
-            {item.done ? <CheckSquare className="text-blue-400" size={24} /> : <Square className="text-white/40" size={24} />}
-            <span className={`${item.done ? 'line-through text-white/30' : 'text-white/90'} text-lg font-medium`}>{item.text}</span>
+            {item.done ? <CheckSquare className="text-blue-400" size={24} /> : <Square className="text-white/60" size={24} />}
+            <span className={`${item.done ? 'line-through text-white/50' : 'text-white/90'} text-lg font-medium`}>{item.text}</span>
           </button>
         ))}
       </div>
@@ -446,7 +446,7 @@ export default function Workout() {
                   isActive ? 'bg-blue-500 border-blue-400 shadow-lg' : isDone ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10 hover:bg-white/20'
                 }`}
               >
-                <div className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-blue-200' : 'text-white/40'}`}>
+                <div className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-blue-200' : 'text-white/60'}`}>
                   {ex.muscleGroup}
                 </div>
                 <div className={`text-xs font-bold flex items-center gap-1.5 ${isActive ? 'text-white' : 'text-white/70'}`}>
@@ -462,7 +462,7 @@ export default function Workout() {
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
-            <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{currentExercise.equipment} • {currentExercise.progressionType}</span>
+            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">{currentExercise.equipment} • {currentExercise.progressionType}</span>
           </div>
           
           {/* MID-WORKOUT ALTERATION BUTTONS */}
@@ -515,7 +515,7 @@ export default function Workout() {
               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
                 {bestPerformance.map((set, idx) => (
                   <div key={idx} className={`shrink-0 rounded-2xl px-5 py-3 border ${shouldOverload ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
-                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Set {idx + 1}</div>
+                    <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Set {idx + 1}</div>
                     <div className={`font-bold text-lg ${shouldOverload ? 'text-amber-400' : 'text-white'}`}>
                       {set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps}
                     </div>
@@ -555,7 +555,7 @@ export default function Workout() {
                   </button>
                 )}
                 {isBodyweight && (
-                  <button onClick={() => setIsWeighted(!isWeighted)} className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                  <button onClick={() => setIsWeighted(!isWeighted)} className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/60'}`}>
                     {isWeighted ? 'Weighted' : '+ Weight'}
                   </button>
                 )}
@@ -592,7 +592,7 @@ export default function Workout() {
           </div>
         </div>
 
-        <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/30 text-white font-bold text-lg py-5 rounded-3xl flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
+        <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/50 text-white font-bold text-lg py-5 rounded-3xl flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
           <Check size={24} /> Complete Set {currentSet}
         </button>
 
@@ -635,7 +635,7 @@ export default function Workout() {
         {showPlateModal && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl p-6 flex flex-col justify-center items-center animate-in fade-in">
             <div className="bg-white/10 border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
-              <button onClick={() => setShowPlateModal(false)} className="absolute top-5 right-5 text-white/50 hover:text-white"><X size={20} /></button>
+              <button aria-label="Close" onClick={() => setShowPlateModal(false)} className="absolute top-5 right-5 text-white/50 hover:text-white"><X size={20} /></button>
               <h3 className="text-xl font-bold text-white mb-1">Plate Breakdown</h3>
               <p className="text-white/50 text-xs mb-6">Per side (Assuming 20kg bar/sled)</p>
               <div className="space-y-2 mb-6">
@@ -645,9 +645,9 @@ export default function Workout() {
                     <span className="text-blue-400 font-bold text-lg">× {item.count}</span>
                   </div>
                 ))}
-                {plateBreakdown.length === 0 && <p className="text-white/40 text-center py-4 text-sm">Weight too low for extra plates.</p>}
+                {plateBreakdown.length === 0 && <p className="text-white/60 text-center py-4 text-sm">Weight too low for extra plates.</p>}
               </div>
-              <button onClick={() => setShowPlateModal(false)} className="w-full bg-blue-500 text-white font-bold py-3.5 rounded-2xl">Got it</button>
+              <button aria-label="Close" onClick={() => setShowPlateModal(false)} className="w-full bg-blue-500 text-white font-bold py-3.5 rounded-2xl">Got it</button>
             </div>
           </div>
         )}

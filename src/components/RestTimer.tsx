@@ -76,7 +76,7 @@ export default function RestTimer({ initialSeconds, onSkip, onComplete }: RestTi
           />
         </svg>
         <div className="text-center z-10 flex flex-col items-center">
-          <p className="text-white/40 text-[10px] font-bold tracking-widest uppercase mb-1">Rest Interval</p>
+          <p className="text-white/60 text-[10px] font-bold tracking-widest uppercase mb-1">Rest Interval</p>
           <p className="text-5xl font-bold text-white tabular-nums tracking-tighter">
             {mins}:{secs.toString().padStart(2, '0')}
           </p>
@@ -109,7 +109,7 @@ export default function RestTimer({ initialSeconds, onSkip, onComplete }: RestTi
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
               totalDuration === sec
                 ? 'bg-blue-500/20 border-blue-500/40 text-blue-400'
-                : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white'
+                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             {sec >= 60 ? `${sec / 60}m` : `${sec}s`}

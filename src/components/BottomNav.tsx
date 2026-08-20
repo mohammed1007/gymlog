@@ -21,7 +21,7 @@ export default function BottomNav() {
               `flex flex-col items-center justify-center flex-1 gap-1 transition-all duration-300 ${
                 isActive 
                   ? 'text-white scale-105' 
-                  : 'text-white/40 hover:text-white/60'
+                  : 'text-white/60 hover:text-white/60'
               }`
             }
           >

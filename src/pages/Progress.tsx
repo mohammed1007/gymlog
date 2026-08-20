@@ -211,7 +211,7 @@ export default function Progress() {
       <header className="mb-8 mt-4 flex justify-between items-end">
         <h1 className="text-3xl font-bold text-white tracking-tight">Progress</h1>
         <div className="text-right">
-          <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">Total Sessions</p>
+          <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold">Total Sessions</p>
           <p className="text-xl font-bold text-blue-400">{pastWorkouts.length}</p>
         </div>
       </header>
@@ -223,12 +223,12 @@ export default function Progress() {
           const isDone = todayHabitsLog?.completedIds.includes(habit.id);
           return (
             <button key={habit.id} onClick={() => toggleHabit(habit.id)} className="flex items-center gap-4 w-full text-left p-3 rounded-2xl bg-black/20 border border-white/5">
-              {isDone ? <CheckSquare className="text-blue-400" size={22} /> : <Square className="text-white/30" size={22} />}
+              {isDone ? <CheckSquare className="text-blue-400" size={22} /> : <Square className="text-white/50" size={22} />}
               <span className={`text-sm font-medium ${isDone ? 'text-white line-through opacity-50' : 'text-white'}`}>{habit.label}</span>
             </button>
           );
         })}
-        {allHabits?.length === 0 && <p className="text-white/30 text-xs">Add items in Settings.</p>}
+        {allHabits?.length === 0 && <p className="text-white/50 text-xs">Add items in Settings.</p>}
       </div>
 
       {/* 2. Mass Tracker */}
@@ -271,12 +271,12 @@ export default function Progress() {
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2.5">
-                  <div className={`p-2 rounded-xl ${t.unlocked ? 'bg-amber-500/20 text-amber-400' : 'bg-black/30 text-white/30'}`}>
+                  <div className={`p-2 rounded-xl ${t.unlocked ? 'bg-amber-500/20 text-amber-400' : 'bg-black/30 text-white/50'}`}>
                     {t.unlocked ? <Trophy size={16} /> : <Lock size={16} />}
                   </div>
                   <div>
                     <h3 className="text-white font-bold text-sm leading-tight">{t.title}</h3>
-                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{t.category}</span>
+                    <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">{t.category}</span>
                   </div>
                 </div>
                 <div>
@@ -319,7 +319,7 @@ export default function Progress() {
           </div>
         ) : (
           <div className="h-48 flex items-center justify-center border border-dashed border-white/10 rounded-2xl">
-            <p className="text-white/30 text-sm">Complete a workout to see balance.</p>
+            <p className="text-white/50 text-sm">Complete a workout to see balance.</p>
           </div>
         )}
       </div>
@@ -356,7 +356,7 @@ export default function Progress() {
           </div>
         ) : (
           <div className="h-32 flex items-center justify-center border border-dashed border-white/10 rounded-2xl">
-            <p className="text-white/30 text-sm">Log a session to see your volume trend.</p>
+            <p className="text-white/50 text-sm">Log a session to see your volume trend.</p>
           </div>
         )}
       </div>
@@ -370,7 +370,7 @@ export default function Progress() {
               <div className="bg-black/20 p-2 rounded-xl border border-white/5"><Dumbbell size={16} className="text-white/50" /></div>
               <div>
                 <span className="text-white font-medium block">{lift.name}</span>
-                <span className="text-white/40 text-xs flex items-center gap-1 mt-0.5">
+                <span className="text-white/60 text-xs flex items-center gap-1 mt-0.5">
                   <Award size={12} className="text-amber-400" /> Est. 1RM: <strong className="text-white/70">{lift.est1RM > 0 ? `${lift.est1RM} kg` : '--'}</strong>
                 </span>
               </div>
