@@ -1,6 +1,6 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Download, Upload, Server, List, ChevronRight, ArrowLeft, Plus, Trash2, X, Minus, Eye, EyeOff, Edit2, Folder } from 'lucide-react';
+import { Download, Upload, Server, List, ChevronRight, ArrowLeft, Plus, Trash2, X, Minus, FileText, Eye, EyeOff, Edit2, Folder } from 'lucide-react';
 import { db } from '../db/db';
 import MuscleMap from '../components/MuscleMap';
 
@@ -87,7 +87,7 @@ export default function Settings() {
     if (!newDayName || !selectedProgramId) return;
     const exists = await db.routineTemplates.get(newDayName);
     if (exists) {
-      alert("A day with this exact name already exists. Please pick a unique name (e.g., 'Upper B').");
+      alert("A day with this exact name already exists. Please pick a unique name.");
       return;
     }
     await db.routineTemplates.add({ dayKey: newDayName, programId: selectedProgramId, exercises: [], isActive: true });
@@ -182,6 +182,43 @@ export default function Settings() {
     reader.readAsText(file);
   };
 
+  const handleExportRoutineText = () => {
+    if (!routines || !exercises) return;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(30);
+
+    let text = "🏋️ MY GYM ROUTINE PLAN\n";
+    text += "========================================\n\n";
+
+    routines.forEach(routine => {
+      text += `📅 ${routine.dayKey.toUpperCase()} ${routine.isActive === false ? '(HIDDEN)' : ''}\n`;
+      text += "----------------------------------------\n";
+
+      const safeItems = getSafeExercises(routine);
+      if (safeItems.length === 0) {
+        text += "No exercises planned.\n";
+      } else {
+        safeItems.forEach((item: any, index: number) => {
+          const ex = exercises.find(e => e.id === item.exerciseId);
+          if (ex) {
+            text += `${index + 1}. ${ex.name} (${ex.equipment})\n`;
+            text += `   Target: ${item.sets} sets × ${ex.minReps}-${ex.maxReps} reps\n`;
+            if (ex.notes) {
+              text += `   💡 Note: ${ex.notes}\n`;
+            }
+          }
+        });
+      }
+      text += "\n";
+    });
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `My_Gym_Routine.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (view === 'main') {
     return (
@@ -256,7 +293,7 @@ export default function Settings() {
                   <div className="flex gap-2 w-full animate-in fade-in">
                     <input type="text" value={editProgramName} onChange={e => setEditProgramName(e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-blue-500/50" autoFocus />
                     <button onClick={() => handleSaveProgramName(prog.id)} className="bg-blue-500 text-white px-4 rounded-xl font-bold">Save</button>
-                    <button aria-label="Close" onClick={() => setEditingProgramId(null)} className="bg-white/10 text-white/50 hover:text-white px-3 rounded-xl"><X size={16}/></button>
+                    <button aria-label="Close editing" onClick={() => setEditingProgramId(null)} className="bg-white/10 text-white/50 hover:text-white px-3 rounded-xl"><X size={16}/></button>
                   </div>
                 ) : (
                   <div className="flex justify-between items-center">
@@ -271,7 +308,7 @@ export default function Settings() {
                       <button aria-label="Toggle visibility" onClick={() => handleToggleProgramVisibility(prog.id, prog.isActive)} className="p-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white rounded-xl transition-all">
                         {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
-                      <button aria-label="Edit program" onClick={() => { setEditingProgramId(prog.id); setEditProgramName(prog.name); }} className="p-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white rounded-xl transition-all">
+                      <button aria-label="Edit program name" onClick={() => { setEditingProgramId(prog.id); setEditProgramName(prog.name); }} className="p-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white rounded-xl transition-all">
                         <Edit2 size={16} />
                       </button>
                       <button aria-label="Open program" onClick={() => { setSelectedProgramId(prog.id); setView('routines'); }} className="px-4 py-2 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-xl ml-1">Open</button>
@@ -281,6 +318,12 @@ export default function Settings() {
               </div>
             );
           })}
+
+          <div className="pt-4 border-t border-white/10">
+            <button onClick={handleExportRoutineText} className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 transition-all">
+              <FileText size={18} className="text-white/50" /> Export Routines as Text
+            </button>
+          </div>
         </div>
       )}
 
@@ -312,7 +355,7 @@ export default function Settings() {
                       <p className="text-white/50 text-xs mt-0.5">{safeItems.length} exercises</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button aria-label="Toggle day" onClick={() => handleToggleDayVisibility(routine.dayKey, routine.isActive)} className="p-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white rounded-xl transition-all">
+                      <button aria-label="Toggle day visibility" onClick={() => handleToggleDayVisibility(routine.dayKey, routine.isActive)} className="p-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white rounded-xl transition-all">
                         {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                       <button aria-label="Edit day" onClick={() => setEditingDay(routine.dayKey)} className="px-4 py-2 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-xl">Edit</button>
@@ -333,7 +376,7 @@ export default function Settings() {
                 <h3 className="text-white font-bold text-xl">{editingDay}</h3>
                 <div className="flex gap-3 items-center">
                   <button aria-label="Delete day" onClick={() => handleDeleteDay(editingDay)} className="p-2 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"><Trash2 size={18} /></button>
-                  <button aria-label="Done editing" onClick={() => setEditingDay(null)} className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all">Done</button>
+                  <button aria-label="Done editing day" onClick={() => setEditingDay(null)} className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all">Done</button>
                 </div>
               </div>
               <div className="space-y-3">
@@ -362,7 +405,7 @@ export default function Settings() {
                   });
                 })()}
               </div>
-              <button onClick={() => setShowExercisePicker(true)} className="w-full mt-4 bg-white/10 border border-white/10 text-white font-bold py-4 rounded-2xl flex justify-center gap-2"><Plus size={18} /> Add Exercise</button>
+              <button aria-label="Open exercise picker" onClick={() => setShowExercisePicker(true)} className="w-full mt-4 bg-white/10 border border-white/10 text-white font-bold py-4 rounded-2xl flex justify-center gap-2"><Plus size={18} /> Add Exercise</button>
             </>
           )}
         </div>
@@ -399,7 +442,7 @@ export default function Settings() {
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col pb-safe">
           <div className="flex justify-between items-center mb-6 mt-4">
             <h3 className="text-xl font-bold text-white">Select Exercise</h3>
-            <button aria-label="Close" onClick={() => setShowExercisePicker(false)} className="p-3 bg-white/10 rounded-full"><X size={20} className="text-white" /></button>
+            <button aria-label="Close picker" onClick={() => setShowExercisePicker(false)} className="p-3 bg-white/10 rounded-full"><X size={20} className="text-white" /></button>
           </div>
           
           <div className="flex-1 overflow-y-auto space-y-3 pr-2 hide-scrollbar pb-36">

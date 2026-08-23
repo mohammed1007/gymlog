@@ -11,7 +11,11 @@ const exactMuscleTargets: Record<string, string[]> = {
   'pec-deck-machine': ['chest', 'front-delts'],
   'dips': ['chest', 'triceps', 'front-delts'],
   'push-ups': ['chest', 'triceps', 'front-delts'],
-  
+  'single-arm-biceps-curl': ['biceps'],
+  'single-arm-triceps-extension': ['triceps'], 
+  'lat-pulldown-alt-grip': ['lats', 'biceps'], 
+  'hammer-curl-machine': ['biceps', 'forearms'],
+  'captains-chair-leg-raises': ['abs'],
   // Back
   'pull-ups': ['lats', 'biceps', 'rear-delts'],
   'chin-ups': ['lats', 'biceps'],
