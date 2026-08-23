@@ -320,8 +320,10 @@ export default function Workout() {
         </div>
 
         <div className="space-y-4 flex-1">
-          {storedTemplates.map(template => {
-            const isCompleted = completedDays.includes(template.dayKey);
+          {storedTemplates
+            .filter(template => template.isActive !== false) // THIS IS THE NEW LINE
+            .map(template => {
+              const isCompleted = completedDays.includes(template.dayKey);
             const templateExercises = template.exercises || (template as any).exerciseIds || [];
             const templateExerciseNames = allExercises 
               ? templateExercises.map((item: any) => {

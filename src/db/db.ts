@@ -63,6 +63,12 @@ export interface NutritionLog {
   protein: number;
 }
 
+export interface RoutineTemplate {
+  dayKey: string;
+  isActive?: boolean; // NEW: Toggle visibility on the workout tab
+  exercises: { exerciseId: string; sets: number }[];
+}
+
 export class GymDatabase extends Dexie {
   workoutLogs!: Table<WorkoutLog, number>;
   routineTemplates!: Table<RoutineTemplate, string>;
