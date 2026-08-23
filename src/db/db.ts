@@ -19,8 +19,17 @@ export interface WorkoutLog {
   exercises: CompletedExercise[];
 }
 
+// NEW: Program Folder Schema
+export interface WorkoutProgram {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
 export interface RoutineTemplate {
   dayKey: string;
+  programId?: string; // Links this day to a specific Program Folder
+  isActive?: boolean;
   exercises: { exerciseId: string; sets: number }[];
 }
 
@@ -53,7 +62,6 @@ export interface DailyHabitLog {
   completedIds: string[];
 }
 
-// NEW: Schema for tracking frictionless calories
 export interface NutritionLog {
   id?: number;
   date: string;
@@ -61,12 +69,6 @@ export interface NutritionLog {
   name: string;
   calories: number;
   protein: number;
-}
-
-export interface RoutineTemplate {
-  dayKey: string;
-  isActive?: boolean; // NEW: Toggle visibility on the workout tab
-  exercises: { exerciseId: string; sets: number }[];
 }
 
 export class GymDatabase extends Dexie {
@@ -77,10 +79,11 @@ export class GymDatabase extends Dexie {
   habitDefinitions!: Table<HabitDefinition, string>;
   dailyHabits!: Table<DailyHabitLog, string>;
   nutritionLogs!: Table<NutritionLog, number>;
+  workoutPrograms!: Table<WorkoutProgram, string>;
 
   constructor() {
     super('GymLogDatabase');
-    // Bumped to version 5 to safely inject the new nutritionLogs table
+    
     this.version(5).stores({
       workoutLogs: '++id, date',
       routineTemplates: 'dayKey',
@@ -89,6 +92,22 @@ export class GymDatabase extends Dexie {
       habitDefinitions: 'id',
       dailyHabits: 'date',
       nutritionLogs: '++id, date, timestamp'
+    });
+
+    // Version 6: Injects the Programs table and safely migrates old days
+    this.version(6).stores({
+      workoutPrograms: 'id',
+      routineTemplates: 'dayKey, programId'
+    }).upgrade(async tx => {
+      await tx.table('workoutPrograms').add({
+        id: 'default-program',
+        name: 'My Routine',
+        isActive: true
+      });
+      await tx.table('routineTemplates').toCollection().modify(routine => {
+        routine.programId = 'default-program';
+        routine.isActive = true;
+      });
     });
   }
 }

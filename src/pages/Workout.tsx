@@ -187,7 +187,7 @@ export default function Workout() {
     }
 
     await db.routineTemplates.put({
-      dayKey: selectedDayKey,
+      ...activeTemplate,
       exercises: updatedItems
     });
 
@@ -218,7 +218,6 @@ export default function Workout() {
       setWorkoutLog(updatedLog);
       setCurrentExerciseSets([]); 
       
-      // Trigger Visual Confirmation
       setCurrentState('exercise-complete');
     }
   };
@@ -287,7 +286,11 @@ export default function Workout() {
   };
 
   const renderDaySelection = () => {
-    if (!storedTemplates) return <div className="p-6 text-white/50">Loading routines...</div>;
+    const programs = useLiveQuery(() => db.workoutPrograms.toArray());
+    
+    if (!storedTemplates || !programs) return <div className="p-6 text-white/50">Loading routines...</div>;
+
+    const activePrograms = programs.filter(p => p.isActive);
 
     return (
       <div className="flex-1 flex flex-col animate-in fade-in">
@@ -299,7 +302,7 @@ export default function Workout() {
             </div>
             <div className="flex gap-2">
               <button onClick={handleResumeSession} className="flex-1 bg-blue-500 text-white font-bold py-3 rounded-xl text-sm">Resume</button>
-              <button onClick={handleDiscardSession} className="px-4 bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 font-bold rounded-xl transition-all"><Trash2 size={18} /></button>
+              <button aria-label="Discard session" onClick={handleDiscardSession} className="px-4 bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 font-bold rounded-xl transition-all"><Trash2 size={18} /></button>
             </div>
           </div>
         )}
@@ -319,52 +322,76 @@ export default function Workout() {
           )}
         </div>
 
-        <div className="space-y-4 flex-1">
-          {storedTemplates
-            .filter(template => template.isActive !== false) // THIS IS THE NEW LINE
-            .map(template => {
-              const isCompleted = completedDays.includes(template.dayKey);
-            const templateExercises = template.exercises || (template as any).exerciseIds || [];
-            const templateExerciseNames = allExercises 
-              ? templateExercises.map((item: any) => {
-                  const id = typeof item === 'string' ? item : item.exerciseId;
-                  return allExercises.find(e => e.id === id)?.name;
-                }).filter(Boolean).join(', ')
-              : 'Loading exercises...';
+        <div className="space-y-8 flex-1">
+          {activePrograms.map(program => {
+            const programDays = storedTemplates.filter(t => 
+              t.programId === program.id || (!t.programId && program.id === 'default-program')
+            ).filter(t => t.isActive !== false);
+
+            if (programDays.length === 0) return null;
 
             return (
-              <div 
-                key={template.dayKey}
-                className={`w-full p-6 rounded-3xl border transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
-                  isCompleted 
-                    ? 'bg-white/5 border-white/5 opacity-50' 
-                    : 'bg-white/10 backdrop-blur-xl border-white/10'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-blue-400 font-bold text-sm tracking-widest uppercase">{template.dayKey}</span>
-                    {isCompleted && (
-                      <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                        Completed
-                      </span>
-                    )}
+              <div key={program.id} className="space-y-4">
+                <h3 className="text-lg font-bold text-white/50 uppercase tracking-widest flex items-center gap-2 mb-2 ml-1">
+                  <div className="bg-blue-500/20 p-1.5 rounded-lg border border-blue-500/30">
+                    <CheckSquare size={14} className="text-blue-400"/>
                   </div>
-                </div>
+                  {program.name}
+                </h3>
+                
+                {programDays.map(template => {
+                  const isCompleted = completedDays.includes(template.dayKey);
+                  const templateExercises = template.exercises || (template as any).exerciseIds || [];
+                  const templateExerciseNames = allExercises 
+                    ? templateExercises.map((item: any) => {
+                        const id = typeof item === 'string' ? item : item.exerciseId;
+                        return allExercises.find(e => e.id === id)?.name;
+                      }).filter(Boolean).join(', ')
+                    : 'Loading exercises...';
 
-                <h3 className="text-xl font-bold text-white">{template.dayKey} Routine</h3>
-                <p className="text-white/50 text-xs mt-1 line-clamp-2">{templateExerciseNames || 'No exercises added yet.'}</p>
+                  return (
+                    <div 
+                      key={template.dayKey}
+                      className={`w-full p-6 rounded-3xl border transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
+                        isCompleted 
+                          ? 'bg-white/5 border-white/5 opacity-50' 
+                          : 'bg-white/10 backdrop-blur-xl border-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-blue-400 font-bold text-sm tracking-widest uppercase">{template.dayKey}</span>
+                          {isCompleted && (
+                            <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              Completed
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                <button 
-                  disabled={templateExercises.length === 0}
-                  onClick={() => startDay(template.dayKey)}
-                  className="w-full mt-5 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all"
-                >
-                  Start Workout <ArrowRight size={18} />
-                </button>
+                      <h3 className="text-xl font-bold text-white">{template.dayKey} Routine</h3>
+                      <p className="text-white/50 text-xs mt-1 line-clamp-2">{templateExerciseNames || 'No exercises added yet.'}</p>
+
+                      <button 
+                        disabled={templateExercises.length === 0}
+                        onClick={() => startDay(template.dayKey)}
+                        className="w-full mt-5 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all"
+                      >
+                        Start Workout <ArrowRight size={18} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
+
+          {activePrograms.length === 0 && (
+            <div className="text-center p-8 bg-white/5 rounded-3xl border border-white/5">
+              <p className="text-white/40 text-sm">No active programs found.</p>
+              <p className="text-white/30 text-xs mt-1">Go to Settings to unhide or create a program.</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -384,8 +411,8 @@ export default function Workout() {
             onClick={() => toggleWarmup(item.id)}
             className={`flex items-center gap-4 w-full text-left p-5 rounded-3xl border transition-all duration-300 ${item.done ? 'bg-white/5 border-white/5' : 'bg-white/10 backdrop-blur-xl border-white/10 shadow-lg'}`}
           >
-            {item.done ? <CheckSquare className="text-blue-400" size={24} /> : <Square className="text-white/60" size={24} />}
-            <span className={`${item.done ? 'line-through text-white/50' : 'text-white/90'} text-lg font-medium`}>{item.text}</span>
+            {item.done ? <CheckSquare className="text-blue-400" size={24} /> : <Square className="text-white/40" size={24} />}
+            <span className={`${item.done ? 'line-through text-white/30' : 'text-white/90'} text-lg font-medium`}>{item.text}</span>
           </button>
         ))}
       </div>
@@ -431,7 +458,6 @@ export default function Workout() {
     return (
       <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 pt-10">
         
-        {/* BIG PILLS ARE BACK */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-2 mt-2 snap-x">
           {exercises.map((ex, idx) => {
             const isDone = workoutLog.some(log => log.exerciseId === ex.id);
@@ -448,7 +474,7 @@ export default function Workout() {
                   isActive ? 'bg-blue-500 border-blue-400 shadow-lg' : isDone ? 'bg-white/5 border-white/5 opacity-50' : 'bg-white/10 border-white/10 hover:bg-white/20'
                 }`}
               >
-                <div className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-blue-200' : 'text-white/60'}`}>
+                <div className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-blue-200' : 'text-white/40'}`}>
                   {ex.muscleGroup}
                 </div>
                 <div className={`text-xs font-bold flex items-center gap-1.5 ${isActive ? 'text-white' : 'text-white/70'}`}>
@@ -464,10 +490,9 @@ export default function Workout() {
           <p className="text-blue-400 font-bold text-xs tracking-widest uppercase mb-2">Exercise {currentExerciseIndex + 1} of {exercises.length}</p>
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">{currentExercise.name}</h2>
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">{currentExercise.equipment} • {currentExercise.progressionType}</span>
+            <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{currentExercise.equipment} • {currentExercise.progressionType}</span>
           </div>
           
-          {/* MID-WORKOUT ALTERATION BUTTONS */}
           <div className="flex items-center gap-2 mt-4 mb-2">
             <button onClick={() => { setPickerMode('swap'); setShowExercisePicker(true); }} className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
               <ArrowRightLeft size={14}/> Swap Machine
@@ -517,7 +542,7 @@ export default function Workout() {
               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
                 {bestPerformance.map((set, idx) => (
                   <div key={idx} className={`shrink-0 rounded-2xl px-5 py-3 border ${shouldOverload ? 'bg-amber-500/10 border-amber-500/20' : 'bg-black/20 border-white/5'}`}>
-                    <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Set {idx + 1}</div>
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Set {idx + 1}</div>
                     <div className={`font-bold text-lg ${shouldOverload ? 'text-amber-400' : 'text-white'}`}>
                       {set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps}
                     </div>
@@ -537,6 +562,7 @@ export default function Workout() {
                     <span className="text-white font-bold">{set.weight > 0 ? `${set.weight}kg × ` : ''}{set.reps} reps</span>
                   </div>
                   <button 
+                    aria-label="Remove set"
                     onClick={() => handleRemoveLoggedSet(idx)} 
                     className="p-2 text-red-400/50 hover:text-red-400 bg-red-500/5 hover:bg-red-500/10 rounded-xl transition-all"
                   >
@@ -557,7 +583,7 @@ export default function Workout() {
                   </button>
                 )}
                 {isBodyweight && (
-                  <button onClick={() => setIsWeighted(!isWeighted)} className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/60'}`}>
+                  <button onClick={() => setIsWeighted(!isWeighted)} className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${isWeighted ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
                     {isWeighted ? 'Weighted' : '+ Weight'}
                   </button>
                 )}
@@ -594,7 +620,7 @@ export default function Workout() {
           </div>
         </div>
 
-        <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/50 text-white font-bold text-lg py-5 rounded-3xl flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
+        <button disabled={!reps} onClick={handleLogSet} className="w-full mt-6 bg-blue-500 hover:bg-blue-400 disabled:bg-white/10 disabled:text-white/30 text-white font-bold text-lg py-5 rounded-3xl flex items-center justify-center gap-2 transition-all shadow-[0_0_40px_rgba(59,130,246,0.2)]">
           <Check size={24} /> Complete Set {currentSet}
         </button>
 
@@ -604,7 +630,7 @@ export default function Workout() {
               <h3 className="text-xl font-bold text-white">
                 {pickerMode === 'swap' ? 'Swap Machine' : 'Add Machine'}
               </h3>
-              <button onClick={() => setShowExercisePicker(false)} className="p-3 bg-white/10 rounded-full"><X size={20} className="text-white" /></button>
+              <button aria-label="Close" onClick={() => setShowExercisePicker(false)} className="p-3 bg-white/10 rounded-full"><X size={20} className="text-white" /></button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 hide-scrollbar pb-36">
               {allExercises?.map(ex => {
@@ -647,9 +673,9 @@ export default function Workout() {
                     <span className="text-blue-400 font-bold text-lg">× {item.count}</span>
                   </div>
                 ))}
-                {plateBreakdown.length === 0 && <p className="text-white/60 text-center py-4 text-sm">Weight too low for extra plates.</p>}
+                {plateBreakdown.length === 0 && <p className="text-white/40 text-center py-4 text-sm">Weight too low for extra plates.</p>}
               </div>
-              <button aria-label="Close" onClick={() => setShowPlateModal(false)} className="w-full bg-blue-500 text-white font-bold py-3.5 rounded-2xl">Got it</button>
+              <button onClick={() => setShowPlateModal(false)} className="w-full bg-blue-500 text-white font-bold py-3.5 rounded-2xl">Got it</button>
             </div>
           </div>
         )}
