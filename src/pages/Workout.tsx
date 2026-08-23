@@ -37,7 +37,8 @@ export default function Workout() {
   const allExercises = useLiveQuery(() => db.exercises.toArray());
   const storedTemplates = useLiveQuery(() => db.routineTemplates.toArray());
   const pastWorkouts = useLiveQuery(() => db.workoutLogs.orderBy('date').reverse().toArray());
-
+  const programs = useLiveQuery(() => db.workoutPrograms.toArray()); // <-- ADD THIS LINE HERE
+  
   const [warmup, setWarmup] = useState([
     { id: 1, text: 'Arm Swings (Chest/Back stretch) — 15 reps', done: false },
     { id: 2, text: 'Torso Twists — 10 per side', done: false },
@@ -285,9 +286,7 @@ export default function Workout() {
     );
   };
 
-  const renderDaySelection = () => {
-    const programs = useLiveQuery(() => db.workoutPrograms.toArray());
-    
+  const renderDaySelection = () => {    
     if (!storedTemplates || !programs) return <div className="p-6 text-white/50">Loading routines...</div>;
 
     const activePrograms = programs.filter(p => p.isActive);
