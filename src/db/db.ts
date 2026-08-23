@@ -79,7 +79,7 @@ export class GymDatabase extends Dexie {
   habitDefinitions!: Table<HabitDefinition, string>;
   dailyHabits!: Table<DailyHabitLog, string>;
   nutritionLogs!: Table<NutritionLog, number>;
-  workoutPrograms!: Table<WorkoutProgram, string>;
+  workoutPrograms!: Table<WorkoutProgram, string>; // IF THIS IS MISSING, THE APP CRASHES
 
   constructor() {
     super('GymLogDatabase');
